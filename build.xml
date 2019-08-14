@@ -1,0 +1,37 @@
+<project name="jarsBuilder" default="all">
+    <property name="src.dir" value="src"/>
+    <property name="bin.dir" value="jar-classes"/>
+    <property name="jars.dir" value="jars"/>
+
+    <property name="args4j.path" value="lib/args4j-2.0.21.jar"/>
+    <property name="commons.lang3.path" value="lib/commons-lang3-3.1.jar"/>
+    
+    <property name="main.main" value="hwswbuilder/Main"/>
+    <property name="main.jar" value="hw_sw_builder.jar"/>
+    
+    <property name="debug" value="true"/>
+    
+    <target name="all"
+            depends="main-jar">
+    </target>
+
+    <target name="main-jar">
+        <mkdir dir="${bin.dir}"/>
+        <javac srcdir="${src.dir}"
+               destdir="${bin.dir}"
+               classpath="${args4j.path}:${commons.lang3.path}"
+               includeantruntime="false"
+               debug="${debug}">
+            <include name="${main.main}.java"/>
+        </javac>
+        <jar destfile="${jars.dir}/${main.jar}"
+             basedir="${bin.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="${main.main}"/>
+            </manifest>
+            <zipfileset src="${args4j.path}" excludes="meta-inf/*.sf"/>
+            <zipfileset src="${commons.lang3.path}" excludes="meta-inf/*.sf"/>
+        </jar>
+        <delete dir="${bin.dir}"/>
+    </target>
+</project>

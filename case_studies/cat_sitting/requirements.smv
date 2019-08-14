@@ -1,0 +1,15 @@
+-- all requirements specified here are black-box requirements for the ALU in division 1
+
+-- if all the sensors report measurements acceptable for sitting, then eventually a sitting decision will be taken
+-- without delays, this requirement is satisfied even with one failure assumed
+-- with delays, it is not satisfied
+LTLSPEC G(WIDTH_DIV1 <= 200 & WIDTH_DIV2 <= 200 & WIDTH_DIV3 <= 200 & HEIGHT_DIV1 <= 100 & HEIGHT_DIV2 <= 100 & HEIGHT_DIV3 <= 100 & DEPTH_DIV1 <= 150 & DEPTH_DIV2 <= 150 & DEPTH_DIV3 <= 150 -> F CAN_SIT_DIV1)
+
+-- no spurious actuation
+-- due to 2 out of 3 voting in ALUs, not all correct sensor measurements are needed, so this requirement is not satisfied
+LTLSPEC G(CAN_SIT_DIV1 -> O(WIDTH_DIV1 <= 200 & WIDTH_DIV2 <= 200 & WIDTH_DIV3 <= 200 & HEIGHT_DIV1 <= 100 & HEIGHT_DIV2 <= 100 & HEIGHT_DIV3 <= 100 & DEPTH_DIV1 <= 150 & DEPTH_DIV2 <= 150 & DEPTH_DIV3 <= 150))
+
+-- absence of deadlocks - satisfied
+CTLSPEC AG EF CAN_SIT_DIV1
+CTLSPEC AG EF !CAN_SIT_DIV1
+
