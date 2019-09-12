@@ -87,7 +87,7 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
                     // for outputs from subnetworks, fault injection may also be possible
                     // if the input subnetwork can have faults
                     final boolean injectFailures = alwaysInjectInputFailures
-                            || o.parent.parent.shouldInjectFailure(currentDivision);
+                            || o.parent.parent.shouldInjectFailure(division);
                     // need to specify the name of the parent subnetwork, otherwise name clashes
                     // become possible if multiple subnetworks have outputs with identical names
                     result.add(new InputInfo(wrapperInputFromUnitArgName(inputParent), nusmvType,
