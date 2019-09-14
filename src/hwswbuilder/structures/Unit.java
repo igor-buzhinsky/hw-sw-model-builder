@@ -72,11 +72,13 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         final NamedEntity inputParent = inputConnection.parent;
         final Indexing inputConnectionInd = (Indexing) inputConnection;
         if (inputParent instanceof Input) {
-            // for plain inputs, fault injection is governed by the current division
+            // for plain inputs, failure injection is governed by the current division
+            // but if the inputs originate from a different unit group, this may also be a reason for a failure
             final int division = inputConnectionInd.index;
-            final String nusmvType = ((Input) inputParent).nusmvType;
-            return Collections.singletonList(new InputInfo(inputParent.name, nusmvType, division,
-                    alwaysInjectInputFailures));
+            final Input ip = (Input) inputParent;
+            final String nusmvType = ip.nusmvType;
+            final boolean injectFailures = alwaysInjectInputFailures || ip.parent.shouldInjectFailure(division);
+            return Collections.singletonList(new InputInfo(inputParent.name, nusmvType, division, injectFailures));
         } else if (inputParent instanceof UnitOutput) {
             final List<InputInfo> result = new ArrayList<>();
             final UnitOutput o = (UnitOutput) inputParent;
@@ -84,12 +86,12 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
                 if (e.getKey().equals(o.name)) {
                     final int division = inputConnectionInd.index;
                     final String nusmvType = e.getValue().nusmvType;
-                    // for outputs from subnetworks, fault injection may also be possible
-                    // if the input subnetwork can have faults
+                    // for outputs from unit, failure injection may also be possible
+                    // if the input unit can have faults
                     final boolean injectFailures = alwaysInjectInputFailures
                             || o.parent.parent.shouldInjectFailure(division);
-                    // need to specify the name of the parent subnetwork, otherwise name clashes
-                    // become possible if multiple subnetworks have outputs with identical names
+                    // need to specify the name of the parent unit, otherwise name clashes
+                    // become possible if multiple units have outputs with identical names
                     result.add(new InputInfo(wrapperInputFromUnitArgName(inputParent), nusmvType,
                             division, injectFailures));
                 }

@@ -5,11 +5,11 @@ import hwswbuilder.command.Workspace;
 
 import java.util.*;
 
-public class Output extends IndexableEntity<NamedEntity> implements CodeProducer {
+public class Output extends IndexableEntity<UnitGroup> implements CodeProducer {
     private final Map<Integer, Indexing> inputConnections = new LinkedHashMap<>();
 
-    public Output(String name, int divisions) {
-        super(name, null, divisions);
+    public Output(String name, UnitGroup parentUnitGroup) {
+        super(name, parentUnitGroup, parentUnitGroup.divisions);
     }
 
     public void addInputConnection(Indexing from) {

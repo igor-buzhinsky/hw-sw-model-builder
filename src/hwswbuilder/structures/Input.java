@@ -2,11 +2,11 @@ package hwswbuilder.structures;
 
 import hwswbuilder.command.Workspace;
 
-public class Input extends IndexableEntity<NamedEntity> implements CodeProducer {
+public class Input extends IndexableEntity<UnitGroup> implements CodeProducer {
     final String nusmvType;
 
-    public Input(String name, int divisions, String nusmvType) {
-        super(name, null, divisions);
+    public Input(String name, UnitGroup parentUnitGroup, String nusmvType) {
+        super(name, parentUnitGroup, parentUnitGroup.divisions);
         this.nusmvType = nusmvType;
     }
 
