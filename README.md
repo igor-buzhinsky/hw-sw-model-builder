@@ -108,7 +108,7 @@ To see a short help on command line inputs, run:
 
 > java -jar jars/comprehensive_verifier.jar
 
-In [case_studies/pas/pas-comprehensive-separated.sh](/case_studies/pas/pas-comprehensive-separated.sh) (Linux only), there is a full example of running the tool on a large case study. In particular, see the configuration file [case_studies/pas/ps_sas_pacs_pas.conf](/case_studies/pas/ps_sas_pacs_pas.conf) with placeholders to be specified with --configSubstitutions, and requirement files in [case_studies/pas/reqs](/case_studies/pas/reqs).
+In [case_studies/pas-comprehensive-separated.sh](/case_studies/pas-comprehensive-separated.sh) (Linux only), there is a full example of running the tool on a large case study. In particular, see the configuration file [case_studies/pas/ps_sas_pacs_pas.conf](/case_studies/pas/ps_sas_pacs_pas.conf) with placeholders to be specified with --configSubstitutions, and requirement files in [case_studies/pas/reqs](/case_studies/pas/reqs).
 
 To use comprehensive_verifier.jar, you need to have Prolog installed.
 
