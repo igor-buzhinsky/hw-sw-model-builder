@@ -9,10 +9,13 @@
     <property name="main.main" value="hwswbuilder/Main"/>
     <property name="main.jar" value="hw_sw_builder.jar"/>
     
+    <property name="comprehensive-verifier.main" value="hwswbuilder/ComprehensiveVerifier"/>
+    <property name="comprehensive-verifier.jar" value="comprehensive_verifier.jar"/>
+    
     <property name="debug" value="true"/>
     
     <target name="all"
-            depends="main-jar">
+            depends="main-jar, comprehensive-verifier-jar">
     </target>
 
     <target name="main-jar">
@@ -31,6 +34,28 @@
             </manifest>
             <zipfileset src="${args4j.path}" excludes="meta-inf/*.sf"/>
             <zipfileset src="${commons.lang3.path}" excludes="meta-inf/*.sf"/>
+            <fileset file="reasoning.pl" />
+        </jar>
+        <delete dir="${bin.dir}"/>
+    </target>
+    
+    <target name="comprehensive-verifier-jar">
+        <mkdir dir="${bin.dir}"/>
+        <javac srcdir="${src.dir}"
+               destdir="${bin.dir}"
+               classpath="${args4j.path}:${commons.lang3.path}"
+               includeantruntime="false"
+               debug="${debug}">
+            <include name="${comprehensive-verifier.main}.java"/>
+        </javac>
+        <jar destfile="${jars.dir}/${comprehensive-verifier.jar}"
+             basedir="${bin.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="${comprehensive-verifier.main}"/>
+            </manifest>
+            <zipfileset src="${args4j.path}" excludes="meta-inf/*.sf"/>
+            <zipfileset src="${commons.lang3.path}" excludes="meta-inf/*.sf"/>
+            <fileset file="reasoning.pl" />
         </jar>
         <delete dir="${bin.dir}"/>
     </target>

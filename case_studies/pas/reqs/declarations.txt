@@ -1,0 +1,55 @@
+--###################### DECLARATIONS ######################
+
+-- boolean count() the given macro over all divisions
+#define COUNT(X) count(X(1), X(2), X(3), X(4))
+
+-- temporal count(...) >= n, where ... is the given macro
+#define COUNT_GE4(X) (X(1) & X(2) & X(3) & X(4))
+#define COUNT_GE3(X) (X(2) & X(3) & X(4) | X(1) & X(3) & X(4) | X(1) & X(2) & X(4) | X(1) & X(2) & X(3))
+#define COUNT_GE2(X) (X(1) & X(2) | X(1) & X(3) | X(1) & X(4) | X(2) & X(3) | X(2) & X(4) | X(3) & X(4))
+#define COUNT_GE1(X) (X(1) | X(2) | X(3) | X(4))
+
+-- temporal count(...) <= n, where ... is the given macro
+#define COUNT_LE3(X) (!COUNT_GE4(X))
+#define COUNT_LE2(X) (!COUNT_GE3(X))
+#define COUNT_LE1(X) (!COUNT_GE2(X))
+#define COUNT_LE0(X) (!COUNT_GE1(X))
+
+-- weak until: phi must be always TRUE, but if psi becomes TRUE, than nothing else is required starting from this cycle
+#define W(phi, psi) (((phi) U (psi)) | G(phi))
+
+-- LAST_N: true for N previous cycles, not counting the current one
+-- Z is true if there is no previous step
+#define  LAST_1(x) Z(x)
+#define  LAST_2(x) Z((x) & LAST_1(x))
+#define  LAST_3(x) Z((x) & LAST_2(x))
+#define  LAST_4(x) Z((x) & LAST_3(x))
+#define  LAST_5(x) Z((x) & LAST_4(x))
+#define  LAST_6(x) Z((x) & LAST_5(x))
+#define  LAST_7(x) Z((x) & LAST_6(x))
+#define  LAST_8(x) Z((x) & LAST_7(x))
+#define  LAST_9(x) Z((x) & LAST_8(x))
+#define LAST_10(x) Z((x) & LAST_9(x))
+#define LAST_11(x) Z((x) & LAST_10(x))
+#define LAST_12(x) Z((x) & LAST_11(x))
+
+-- NEXT_N: true for the current cycle and next N cycles
+#define  NEXT_0(x) (x)
+#define  NEXT_1(x) ((x) & X(NEXT_0(x)))
+#define  NEXT_2(x) ((x) & X(NEXT_1(x)))
+#define  NEXT_3(x) ((x) & X(NEXT_2(x)))
+#define  NEXT_4(x) ((x) & X(NEXT_3(x)))
+#define  NEXT_5(x) ((x) & X(NEXT_4(x)))
+#define  NEXT_6(x) ((x) & X(NEXT_5(x)))
+#define  NEXT_7(x) ((x) & X(NEXT_6(x)))
+#define  NEXT_8(x) ((x) & X(NEXT_7(x)))
+#define  NEXT_9(x) ((x) & X(NEXT_8(x)))
+#define NEXT_10(x) ((x) & X(NEXT_9(x)))
+
+#define HLEG_P_HIGH(div) (HLEG_P_DIV##div > 70)
+#define HLEG_P_LOW(div) (HLEG_P_DIV##div < 20)
+#define NF_HIGH(div) (NF_DIV##div > 200000)
+#define HLEG_T_LOW(div) (HLEG_T_DIV##div < 150)
+
+#define R1_1_T_CRITERION (HLEG_T_SAS_DIV1 > 300 | HLEG_T_SAS_DIV2 > 300)
+#define R1_1_NF_CRITERION (NF_DIV1 > 150000 | NF_DIV2 > 150000 | NF_DIV3 > 150000 | NF_DIV4 > 150000)

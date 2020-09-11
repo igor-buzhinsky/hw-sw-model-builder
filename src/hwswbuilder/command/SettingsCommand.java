@@ -23,6 +23,9 @@ class SettingsCommand extends Command {
                 case "output_filename":
                     workspace.outputFilename = Paths.get(dir, value).toString();
                     break;
+                case "vanishing_failures":
+                    workspace.vanishingFailures = Boolean.parseBoolean(value);
+                    break;
             }
         }
     }

@@ -1,6 +1,8 @@
 package hwswbuilder.structures;
 
-public class UnitGroup extends IndexableEntity<NamedEntity> {
+import hwswbuilder.command.Command;
+
+public class UnitGroup extends IndexableEntity<NamedEntity<?>> {
     private final int divisionOfFailure;
 
     public UnitGroup(String name, int divisions, int divisionOfFailure) {
@@ -9,7 +11,7 @@ public class UnitGroup extends IndexableEntity<NamedEntity> {
     }
 
     boolean shouldInjectFailure(int division) {
-        return division == divisionOfFailure;
+        return divisionOfFailure == Command.ALL_INDEX || divisionOfFailure == division;
     }
 
     @Override

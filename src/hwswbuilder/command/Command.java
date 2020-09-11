@@ -4,6 +4,7 @@ import hwswbuilder.structures.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +13,9 @@ import java.util.Map;
 public abstract class Command {
     final Map<String, String> arguments;
     final Workspace workspace;
+
+    public static final int NA_INDEX = -1;
+    public static final int ALL_INDEX = -2;
 
     Command(Map<String, String> arguments, Workspace workspace) {
         this.arguments = arguments;
@@ -35,14 +39,20 @@ public abstract class Command {
     }
 
     int getIntArgOrNA(String name, int minValue, int maxValue) {
-        final String arg = getArg(name);
-        return arg.toUpperCase().equals("NA") ? -1 : getIntArg(name, minValue, maxValue);
+        final String arg = getArg(name).toUpperCase();
+        return arg.equals("NA") ? NA_INDEX : getIntArg(name, minValue, maxValue);
+    }
+
+    int getIntArgOrNAOrALL(String name, int minValue, int maxValue) {
+        final String arg = getArg(name).toUpperCase();
+        return arg.equals("NA") ? NA_INDEX : arg.equals("ALL") ? ALL_INDEX
+                : getIntArg(name, minValue, maxValue);
     }
 
     private int getIntFromString(String str, String name, int minValue, int maxValue) {
         final int value;
         try {
-            value = Integer.valueOf(str);
+            value = Integer.parseInt(str);
         } catch (NumberFormatException e) {
             throw new RuntimeException("Invalid value for " + name + ": " + str);
         }
@@ -61,7 +71,7 @@ public abstract class Command {
         return getIntArg("divisions", 1, Integer.MAX_VALUE);
     }
 
-    NamedEntity resolveEntity(String name) {
+    NamedEntity<?> resolveEntity(String name) {
         final List<String> tokens = Arrays.asList(name.split("\\."));
         if (tokens.isEmpty()) {
             throw new RuntimeException("Empty entity name");
@@ -123,7 +133,7 @@ public abstract class Command {
         if (tokens.get(0).equals("const")) {
             return new Constant(tokens.get(1));
         }
-        final IndexableEntity io = (tokens.get(0).equals("input")
+        final IndexableEntity<?> io = (tokens.get(0).equals("input")
                 ? workspace.inputs : workspace.outputs).get(ioName);
         if (io == null) {
             throw new RuntimeException("Input/output " + ioName + " is not defined.");
@@ -138,7 +148,8 @@ public abstract class Command {
         return new Indexing<>(io, index);
     }
 
-    public static Command fromLine(String line, Workspace workspace, String configFilename) {
+    public static Command fromLine(String line, Workspace workspace, String configFilename,
+                                   boolean loadUnitGroupsOnly) {
         final List<String> parts = Arrays.asList(line.split("\\s+"));
         assert !parts.isEmpty();
         final Map<String, String> arguments = new HashMap<>();
@@ -149,6 +160,15 @@ public abstract class Command {
             }
             arguments.put(tokens[0], tokens[1]);
         }
+
+        if (loadUnitGroupsOnly) {
+            if (parts.get(0).equals("unit_group")) {
+                return new UnitGroupCommand(arguments, workspace);
+            } else {
+                return new NopCommand(arguments, workspace);
+            }
+        }
+
         switch (parts.get(0)) {
             case "settings":
                 return new SettingsCommand(arguments, workspace, configFilename);
@@ -174,7 +194,7 @@ public abstract class Command {
         throw new RuntimeException("Unknown command in configuration file: " + parts.get(0));
     }
 
-    public abstract void apply();
+    public abstract void apply() throws IOException;
 
     @Override
     public String toString() {

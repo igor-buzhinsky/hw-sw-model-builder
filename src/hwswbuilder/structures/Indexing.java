@@ -1,6 +1,6 @@
 package hwswbuilder.structures;
 
-public class Indexing<P extends IndexableEntity> extends NamedEntity<P> {
+public class Indexing<P extends IndexableEntity<?>> extends NamedEntity<P> {
     public final int index;
 
     public Indexing(P parent, int index) {

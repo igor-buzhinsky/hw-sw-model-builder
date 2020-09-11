@@ -1,0 +1,151 @@
+--###################### LEVEL 3 (REACTOR PROTECTION) ######################
+
+--# Req 0.1 No deadlocks ("universal reachability" in the papers)
+--# [SAS-specific]
+[[REQ pattern=ag_ef viewpoint=PS_ALU single_failures=PS]] CTLSPEC AG EF  PS_ALU[[viewpoint_division]].RODS_DOWN
+[[REQ pattern=ag_ef viewpoint=PS_ALU single_failures=PS]] CTLSPEC AG EF !PS_ALU[[viewpoint_division]].RODS_DOWN
+[[REQ pattern=ag_ef viewpoint=PS_ALU single_failures=PS]] CTLSPEC AG EF  PS_ALU[[viewpoint_division]].ENABLE_SAS
+[[REQ pattern=ag_ef viewpoint=PS_ALU single_failures=PS]] CTLSPEC AG EF !PS_ALU[[viewpoint_division]].ENABLE_SAS
+
+--# [PACS-specific]
+--# [L3 as a whole]
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] CTLSPEC AG EF  RODS_DOWN[[viewpoint_division]]  --# TRUE
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] CTLSPEC AG EF !RODS_DOWN[[viewpoint_division]]  --# TRUE
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] CTLSPEC AG EF  RODS_UP[[viewpoint_division]]  --# TRUE
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] CTLSPEC AG EF !RODS_UP[[viewpoint_division]]  --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 0.2 No contradictory outputs
+--# [PACS-specific]
+--# [L2 as a whole]
+[[REQ pattern=isolated viewpoint=PACS2]] LTLSPEC G !(PACS2[[viewpoint_division]].CMDOFF & PACS2[[viewpoint_division]].CMDON)  --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 1.1
+--# The reactor is tripped if the hot leg pressure rises above 70 bar (2 out of 4), or the neutron flux rises above 200 000 /s.
+--# [PS-specific]
+[[REQ pattern=isolated viewpoint=PS_APU]] LTLSPEC G (PS_APU[[viewpoint_division]].HLEG_P > 70 -> PS_APU[[viewpoint_division]].HLEG_P_Max2_OR_NF_Max2) --# TRUE
+[[REQ pattern=isolated viewpoint=PS_APU]] LTLSPEC G (PS_APU[[viewpoint_division]].NEUTRON_FLUX > 200000 -> PS_APU[[viewpoint_division]].HLEG_P_Max2_OR_NF_Max2) --# TRUE
+
+-- without manual reset, high P leads to trip
+-- TTTF
+#define R_1_1_P(u) LTLSPEC W(COUNT_GE##u(HLEG_P_HIGH) -> PS_ALU[[viewpoint_division]].RODS_DOWN, MAN_RESET[[viewpoint_division]])
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_P(4)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_P(3)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_P(2)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_P(1)
+
+-- FALSE due to a possibility of trip inhibition (R2.1)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] LTLSPEC W(COUNT_GE4(NF_HIGH) -> PS_ALU[[viewpoint_division]].RODS_DOWN, MAN_RESET[[viewpoint_division]])
+
+-- if we also say that the temperature is not low, inhibition will not be triggered, and the property becomes satisfied
+-- TTTFTTF
+#define R_1_1_NF(u, v) LTLSPEC W(COUNT_GE##u(NF_HIGH) & COUNT_LE##v(HLEG_P_LOW) -> PS_ALU[[viewpoint_division]].RODS_DOWN, MAN_RESET[[viewpoint_division]])
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_NF(4, 0)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_NF(4, 1)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_NF(4, 2)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_NF(4, 3)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_NF(3, 2)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_NF(2, 2)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R_1_1_NF(1, 2)
+
+----------------------------------------------------------------------------
+
+--# Req 2.1
+--# On low power (hot leg temperature is below 150 C and hot leg temperature is below 20 bar in three out of four circuits), the operator can validate the permissive.
+
+--# [PS-specific]
+[[REQ pattern=isolated viewpoint=PS_APU]] PSLSPEC {((PS_APU[[viewpoint_division]].HLEG_P < 20) & (PS_APU[[viewpoint_division]].HLEG_T < 150))[*4]} |-> {PS_APU[[viewpoint_division]].HLEG_T_Min_AND_HLEG_P_Min}!; --# TRUE
+
+#define R2_1_COND(u) (COUNT_GE##u(HLEG_T_LOW) & COUNT_GE##u(HLEG_P_LOW))
+
+-- FF
+-- ##### The properties fail because of the issue explained in the ESREL 2017 paper.
+-- (has to do with PS-ALU)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] LTLSPEC G(R2_1_COND(4) -> X(R2_1_COND(4) -> X(R2_1_COND(4) -> X(R2_1_COND(4) -> !PS_ALU[[viewpoint_division]].RODS_DOWN))))
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] LTLSPEC G F(R2_1_COND(4) -> !PS_ALU[[viewpoint_division]].RODS_DOWN)
+
+-- TFF --> now FFF!!!
+-- why does this fail for u=3?
+--  because PS-ALU first waits for 4 cycles and then makes AND
+--  because the conditions must be present in the same divisions during the entire 4 cycles!
+#define R2_1(u) LTLSPEC (G !MAN_RESET[[viewpoint_division]]) -> G(R2_1_COND(u) -> X(R2_1_COND(u) -> X(R2_1_COND(u) & !PS_ALU[[viewpoint_division]].RODS_DOWN -> X(R2_1_COND(u) -> !PS_ALU[[viewpoint_division]].RODS_DOWN))))
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R2_1(4)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R2_1(3)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R2_1(2)
+
+-- let`s fix this: now works for u=3 but not for u=2
+-- TTF --> now FFF!!!
+#define R2_1_COND2(div) (HLEG_T_LOW(div) & HLEG_P_LOW(div) & X(HLEG_T_LOW(div) & HLEG_P_LOW(div) & X(HLEG_T_LOW(div) & HLEG_P_LOW(div) & X(HLEG_T_LOW(div) & HLEG_P_LOW(div)))))
+#define R2_1_MODIFIED(u) LTLSPEC (G !MAN_RESET[[viewpoint_division]]) -> G(COUNT_GE##u(R2_1_COND2) -> X X(!PS_ALU[[viewpoint_division]].RODS_DOWN -> X(!PS_ALU[[viewpoint_division]].RODS_DOWN)))
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R2_1_MODIFIED(4)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R2_1_MODIFIED(3)
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] R2_1_MODIFIED(2)
+
+--# Actuation of the reactor trip is inhibited if the permissive is valid
+
+--# [PS-specific]
+[[REQ pattern=isolated viewpoint=PS_ALU]] LTLSPEC G (PS_ALU[[viewpoint_division]].content.PERMISSIVE.BO1 -> !PS_ALU[[viewpoint_division]].RODS_DOWN) --# FALSE
+
+--# [PACS-specific]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G ((!PS_ALU[[viewpoint_division]].RODS_DOWN & !PACS2[[viewpoint_division]].SFOFF2 & !PAS_DIV1.RODS_DOWN_GROUP_1 & !PACS2[[viewpoint_division]].content.PACS_RS002.OUT) -> !RODS_DOWN[[viewpoint_division]]) --# TRUE
+
+--# [L3 as a whole]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G ((PS_ALU[[viewpoint_division]].content.PERMISSIVE.BO1 & !PACS2[[viewpoint_division]].SFOFF2 & !PAS_DIV1.RODS_DOWN_GROUP_1 & !PACS2[[viewpoint_division]].content.PACS_RS002.OUT) -> !RODS_DOWN[[viewpoint_division]]) --# FALSE
+
+--# [PS-specific]
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (!PS_ALU[[viewpoint_division]].RODS_DOWN & !MAN_RESET[[viewpoint_division]] & X PS_ALU[[viewpoint_division]].content.PERMISSIVE.BO1 -> X !PS_ALU[[viewpoint_division]].RODS_DOWN) --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 3.1
+--# The trip signal can be manually reset by the operator.
+
+--# [PS-specific]
+[[REQ pattern=isolated viewpoint=PS_ALU]] LTLSPEC G (!MAN_RESET[[viewpoint_division]] & X (MAN_RESET[[viewpoint_division]]) -> X !PS_ALU[[viewpoint_division]].RODS_DOWN) --# FALSE
+
+--# [L3 as a whole]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (!MAN_RESET[[viewpoint_division]] & X (MAN_RESET[[viewpoint_division]] & !PACS2[[viewpoint_division]].SFOFF2 & !PAS_DIV1.RODS_DOWN_GROUP_1 & !PACS2[[viewpoint_division]].content.PACS_RS002.OUT) -> X !RODS_DOWN[[viewpoint_division]]) --# FALSE
+
+--# If the actuation criteria signal rises at the same cycle, the reset does not occur.
+
+--# [PS-specific]
+[[REQ pattern=isolated viewpoint=PS_ALU]] LTLSPEC G (!PS_ALU[[viewpoint_division]].MANUAL_RESET & PS_ALU[[viewpoint_division]].content.AND_2001.BO1 & X (PS_ALU[[viewpoint_division]].MANUAL_RESET) -> X !PS_ALU[[viewpoint_division]].RODS_DOWN) --# TRUE
+
+[[REQ pattern=isolated viewpoint=PS_ALU]] LTLSPEC G (!PS_ALU[[viewpoint_division]].MANUAL_RESET & X (PS_ALU[[viewpoint_division]].MANUAL_RESET & !PS_ALU[[viewpoint_division]].content.AND_2001.BO1) -> X !PS_ALU[[viewpoint_division]].RODS_DOWN) --# FALSE
+
+--# [L3 as a whole]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (!MAN_RESET[[viewpoint_division]] & PS_ALU[[viewpoint_division]].content.AND_2001.BO1 & X (MAN_RESET[[viewpoint_division]] & !PACS2[[viewpoint_division]].SFOFF2 & !PAS_DIV1.RODS_DOWN_GROUP_1 & !PACS2[[viewpoint_division]].content.PACS_RS002.OUT) -> X !RODS_DOWN[[viewpoint_division]]) --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 4.1
+--# When PS actuates the reactor trip, the enabling signal to SAS is reset (i.e., SAS is prevented from raising the control rods).
+
+--# [PS-specific]
+[[REQ pattern=isolated viewpoint=PS_ALU]] LTLSPEC G (PS_ALU[[viewpoint_division]].RODS_DOWN -> !PS_ALU[[viewpoint_division]].ENABLE_SAS) -- TRUE
+
+--# [SAS-specific]
+[[REQ pattern=isolated viewpoint=SAS_ALU]] LTLSPEC (!SAS_ALU[[viewpoint_division]].ENABLE_SAS_1 | !SAS_ALU[[viewpoint_division]].ENABLE_SAS_2 -> !SAS_ALU[[viewpoint_division]].RODS_UP) --# TRUE
+
+--# [PACS-specific]
+[[REQ pattern=isolated viewpoint=PACS2]] LTLSPEC G (!PACS2[[viewpoint_division]].AVON & !PACS2[[viewpoint_division]].content.PACS_RS001.OUT -> !PACS2[[viewpoint_division]].CMDON) --# TRUE
+
+--# [L3 as a whole]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (PS_ALU[[viewpoint_division]].RODS_DOWN -> !RODS_UP[[viewpoint_division]]) --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 5.1
+--# No spurious actuation
+
+--# [PS-specific]
+[[REQ pattern=ltl viewpoint=PS_ALU single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (PS_ALU[[viewpoint_division]].RODS_DOWN -> O (count(HLEG_P_DIV1 > 70 | NF_DIV1 > 200000, HLEG_P_DIV2 > 70 | NF_DIV2 > 200000, HLEG_P_DIV3 > 70 | NF_DIV3 > 200000, HLEG_P_DIV4 > 70 | NF_DIV4 > 200000) >= 2)) --# TRUE
+
+--# [PACS-specific]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> PS_ALU[[viewpoint_division]].RODS_DOWN | PACS2[[viewpoint_division]].SFOFF2 | PAS_DIV1.RODS_DOWN_GROUP_1 | O (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]])) --# TRUE
+
+--# [L3 as a whole]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> O (count(HLEG_P_DIV1 > 70 | NF_DIV1 > 200000, HLEG_P_DIV2 > 70 | NF_DIV2 > 200000, HLEG_P_DIV3 > 70 | NF_DIV3 > 200000, HLEG_P_DIV4 > 70 | NF_DIV4 > 200000) >= 2) | PACS2[[viewpoint_division]].SFOFF2 | PAS_DIV1.RODS_DOWN_GROUP_1 | O (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]])) --# TRUE

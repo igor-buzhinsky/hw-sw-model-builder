@@ -13,8 +13,7 @@ public class CustomModuleHandler {
     private int delayModulesCount = 0;
 
     // list of types -> Pair(module name, module code)
-    private final Map<List<String>, Pair<String, String>> customDelayModules
-            = new LinkedHashMap<>();
+    private final Map<List<String>, Pair<String, String>> customDelayModules = new LinkedHashMap<>();
 
     // module name -> code
     private final Map<String, String> unitWrappers = new LinkedHashMap<>();
@@ -31,18 +30,28 @@ public class CustomModuleHandler {
     }
 
     private final static String FAILURE_MODULE = String.join(SEP, Arrays.asList(
-            "MODULE INJECT_FAILURE(IN1, IN1_FAULT, IN1_CONNECTED, SUBSTITUTE, SUBSTITUTE_FAULT, SUBSTITUTE_CONNECTED)",
+            "MODULE INJECT_FAILURE(IN1, IN1_FAULT, IN1_CONNECTED, SUBSTITUTE, SUBSTITUTE_FAULT, SUBSTITUTE_CONNECTED, FAILURE_VANISHED)",
             "VAR",
             "    OUT1_FAULT: boolean;",
-            "    FAILURE: boolean;",
             "DEFINE",
             "    OUT1 := SUBSTITUTE;",
-            "INIT !FAILURE -> OUT1_FAULT = IN1_FAULT & SUBSTITUTE = IN1",
-            "TRANS !next(FAILURE) -> next(OUT1_FAULT) = next(IN1_FAULT) & next(SUBSTITUTE) = next(IN1)"
+            "    FAILURE := IN1 != OUT1 | IN1_FAULT != OUT1_FAULT;"
+    ));
+
+    private final static String VANISHING_FAILURE_MODULE = String.join(SEP, Arrays.asList(
+            "MODULE INJECT_VANISHING_FAILURE(IN1, IN1_FAULT, IN1_CONNECTED, SUBSTITUTE, SUBSTITUTE_FAULT, SUBSTITUTE_CONNECTED, FAILURE_VANISHED)",
+            "VAR",
+            "    OUT1_FAULT_: boolean;",
+            "DEFINE",
+            "    OUT1       := FAILURE_VANISHED ? IN1       : SUBSTITUTE;",
+            "    OUT1_FAULT := FAILURE_VANISHED ? IN1_FAULT : OUT1_FAULT_;",
+            "    FAILURE    := IN1 != OUT1 | IN1_FAULT != OUT1_FAULT;"
     ));
 
     public String nuSMVDeclaration() {
-        final List<String> parts = new ArrayList<>() {{ add(FAILURE_MODULE + SEP); }};
+        final List<String> parts = new ArrayList<>() {{
+            add(FAILURE_MODULE + SEP + SEP + VANISHING_FAILURE_MODULE + SEP);
+        }};
         if (!customDelayModules.isEmpty()) {
             parts.add(customDelayModules.values().stream().map(Pair::getRight)
                     .collect(Collectors.joining(SEP)));
@@ -90,28 +99,5 @@ public class CustomModuleHandler {
                 .collect(Collectors.joining(" | "))).append(") -> next(delaying)").append(SEP);
         customDelayModules.put(nusmvTypes, Pair.of(moduleName, sb.toString()));
         return moduleName;
-//        MODULE NONDET_BINARY_PAIRED_DELAY(IN0, IN0_FAULT, IN0_CONNECTED, IN1, IN1_FAULT, IN1_CONNECTED)
-//        VAR
-//        OUT0: boolean;
-//        OUT0_FAULT: boolean;
-//        OUT1: boolean;
-//        OUT1_FAULT: boolean;
-//        delaying: boolean;
-//        ASSIGN
-//
-//        init(OUT0) := IN0;
-//        next(OUT0) := delaying ? IN0 : next(IN0);
-//        init(OUT0_FAULT) := IN0_FAULT;
-//        next(OUT0_FAULT) := delaying ? IN0_FAULT : next(IN0_FAULT);
-//
-//        init(OUT1) := IN1;
-//        next(OUT1) := delaying ? IN1 : next(IN1);
-//        init(OUT1_FAULT) := IN1_FAULT;
-//        next(OUT1_FAULT) := delaying ? IN1_FAULT : next(IN1_FAULT);
-//        TRANS
-//                -- disable delay removals which may lead to losing a pulse of length 1
-//        delaying & (IN0 != next(IN0) | IN0_FAULT != next(IN0_FAULT)
-//                | IN1 != next(IN1) | IN1_FAULT != next(IN1_FAULT)) -> next(delaying)
-
     }
 }

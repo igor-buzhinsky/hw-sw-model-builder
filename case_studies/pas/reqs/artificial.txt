@@ -1,0 +1,49 @@
+--###################### TESTING LAST YEAR N+1 CRITERION ######################
+
+-- SAS
+
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] CTLSPEC AG EF  SAS_ALU[[viewpoint_division]].RODS_DOWN
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] CTLSPEC AG EF !SAS_ALU[[viewpoint_division]].RODS_DOWN
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] CTLSPEC AG EF  SAS_ALU[[viewpoint_division]].RODS_UP
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] CTLSPEC AG EF !SAS_ALU[[viewpoint_division]].RODS_UP
+
+#define R_1_1_NORMAL_START(u) LTLSPEC G(!MAN_TRIP_DIV1) -> G(LAST_12(!SAS_ALU[[viewpoint_division]].RODS_DOWN) & (R1_1_T_CRITERION | R1_1_NF_CRITERION) -> NEXT_3(SAS_ALU[[viewpoint_division]].RODS_DOWN) & X X X X(NEXT_##u(!SAS_ALU[[viewpoint_division]].RODS_DOWN)))
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_1_1_NORMAL_START(4)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_1_1_NORMAL_START(5)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_1_1_NORMAL_START(6)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_1_1_NORMAL_START(7)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_1_1_NORMAL_START(8)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_1_1_NORMAL_START(9)
+
+#define R_2_1(u) LTLSPEC G((H !MAN_TRIP_DIV1) & !SAS_ALU[[viewpoint_division]].RODS_DOWN -> X(MAN_TRIP_DIV1 & X(NEXT_10(!MAN_TRIP[[viewpoint_division]])) -> NEXT_3(SAS_ALU[[viewpoint_division]].RODS_DOWN) & X X X X(NEXT_##u(!SAS_ALU[[viewpoint_division]].RODS_DOWN))))
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_2_1(4)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_2_1(5)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_2_1(6)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_2_1(7)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_2_1(8)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] R_2_1(9)
+
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] PSLSPEC always {(!(R1_1_T_CRITERION | R1_1_NF_CRITERION | MAN_TRIP[[viewpoint_division]]))[*4]} |-> {!SAS_ALU[[viewpoint_division]].RODS_DOWN}!;
+
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]] LTLSPEC G (SAS_ALU[[viewpoint_division]].RODS_DOWN -> O (R1_1_T_CRITERION | R1_1_NF_CRITERION | MAN_TRIP[[viewpoint_division]]))
+
+-- PACS
+
+[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF  RODS_DOWN[[viewpoint_division]]
+[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF !RODS_DOWN[[viewpoint_division]]
+[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF  RODS_UP[[viewpoint_division]]
+[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF !RODS_UP[[viewpoint_division]]
+
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PS,PAS,SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> PS_ALU[[viewpoint_division]].RODS_DOWN | PACS2[[viewpoint_division]].SFOFF2 | PAS_DIV1.RODS_DOWN_GROUP_1 | O (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]]))
+
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PS,PAS,SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> PS_ALU[[viewpoint_division]].RODS_DOWN | PAS_DIV1.RODS_DOWN_GROUP_1 | O (R1_1_T_CRITERION | R1_1_NF_CRITERION | MAN_TRIP[[viewpoint_division]] | (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]])))
+
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PS,PAS,SAS]] LTLSPEC G ((!PS_ALU[[viewpoint_division]].RODS_DOWN & !PACS2[[viewpoint_division]].SFOFF2 & !PAS_DIV1.RODS_DOWN_GROUP_1 & !PACS2[[viewpoint_division]].content.PACS_RS002.OUT) -> !RODS_DOWN[[viewpoint_division]]) --# TRUE
+
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PS,PAS,SAS]] LTLSPEC G ((PS_ALU[[viewpoint_division]].content.PERMISSIVE.BO1 & !PACS2[[viewpoint_division]].SFOFF2 & !PAS_DIV1.RODS_DOWN_GROUP_1 & !PACS2[[viewpoint_division]].content.PACS_RS002.OUT) -> !RODS_DOWN[[viewpoint_division]])
+
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PS,PAS,SAS]] LTLSPEC G (PS_ALU[[viewpoint_division]].RODS_DOWN -> !RODS_UP[[viewpoint_division]])
+
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PS,PAS,SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> PS_ALU[[viewpoint_division]].RODS_DOWN | PACS2[[viewpoint_division]].SFOFF2 | PAS_DIV1.RODS_DOWN_GROUP_1 | O (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]]))
+
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> O (count(HLEG_P_DIV1 > 70 | NF_DIV1 > 200000, HLEG_P_DIV2 > 70 | NF_DIV2 > 200000, HLEG_P_DIV3 > 70 | NF_DIV3 > 200000, HLEG_P_DIV4 > 70 | NF_DIV4 > 200000) >= 2) | PACS2[[viewpoint_division]].SFOFF2 | PAS_DIV1.RODS_DOWN_GROUP_1 | O (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]]))

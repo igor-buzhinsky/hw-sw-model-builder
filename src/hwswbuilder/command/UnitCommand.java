@@ -4,6 +4,7 @@ import hwswbuilder.structures.UnitGroup;
 import hwswbuilder.structures.Unit;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -13,7 +14,7 @@ class UnitCommand extends Command {
     }
 
     @Override
-    public void apply() {
+    public void apply() throws IOException {
         final String parentName = getArg("in");
         final UnitGroup parent = workspace.unitGroups.get(parentName);
         if (parent == null) {
@@ -38,6 +39,7 @@ class UnitCommand extends Command {
         }
         workspace.units.put(Pair.of(parent, name), new Unit(name, parent,
                 getArg("nusmv_module_name"), getArg("filename"),
-                divisionToRetain, getIntArg("max_delay", 0, Integer.MAX_VALUE), outputsWithTypes));
+                divisionToRetain, getIntArg("max_delay", 0, Integer.MAX_VALUE), outputsWithTypes,
+                workspace.configDir()));
     }
 }

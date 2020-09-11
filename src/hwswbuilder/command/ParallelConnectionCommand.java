@@ -11,12 +11,12 @@ class ParallelConnectionCommand extends ConnectionCommand {
 
     @Override
     public void apply() {
-        final NamedEntity from = resolveEntity(getArg("from"));
-        final NamedEntity to = resolveEntity(getArg("to"));
+        final NamedEntity<?> from = resolveEntity(getArg("from"));
+        final NamedEntity<?> to = resolveEntity(getArg("to"));
         if (!(to instanceof IndexableEntity)) {
             throw new RuntimeException("Connection destination must be indexable in " + this);
         }
-        final IndexableEntity toInd = (IndexableEntity) to;
+        final IndexableEntity<?> toInd = (IndexableEntity<?>) to;
 
         final RuntimeException failure = new RuntimeException("Cannot add connections from "
                 + from + " (" + from.getClass().getSimpleName() + ") to "
@@ -33,13 +33,13 @@ class ParallelConnectionCommand extends ConnectionCommand {
                 throw failure;
             }
         } else if (from instanceof IndexableEntity) {
-            final IndexableEntity fromInd = (IndexableEntity) from;
+            final IndexableEntity<?> fromInd = (IndexableEntity<?>) from;
             if (fromInd.divisions != toInd.divisions) {
                 throw new RuntimeException("Indexable connection points must have the same number of dimensions in "
                         + this);
             }
             for (int i = 1; i <= toInd.divisions; i++) {
-                final Indexing indexing = new Indexing<>(fromInd, i);
+                final Indexing<?> indexing = new Indexing<>(fromInd, i);
                 if (to instanceof Output) {
                     ((Output) to).addInputConnection(indexing);
                 } else if (to instanceof Unit) {

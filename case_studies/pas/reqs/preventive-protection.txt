@@ -1,0 +1,92 @@
+--###################### LEVEL 2 (PREVENTIVE PROTECTION) ######################
+
+--# Req 0.1 No deadlocks ("universal reachability" in the papers)
+--# [SAS-specific]
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PAS,SAS]] CTLSPEC AG EF  SAS_ALU[[viewpoint_division]].RODS_DOWN --# TRUE
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PAS,SAS]] CTLSPEC AG EF !SAS_ALU[[viewpoint_division]].RODS_DOWN --# TRUE
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PAS,SAS]] CTLSPEC AG EF  SAS_ALU[[viewpoint_division]].RODS_UP --# TRUE
+[[REQ pattern=ag_ef viewpoint=SAS_ALU single_failures=PAS,SAS]] CTLSPEC AG EF !SAS_ALU[[viewpoint_division]].RODS_UP --# TRUE
+
+--# [PACS-specific]
+--# [L2 as a whole]
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,SAS]] CTLSPEC AG EF  RODS_DOWN[[viewpoint_division]]  --# TRUE
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,SAS]] CTLSPEC AG EF !RODS_DOWN[[viewpoint_division]]  --# TRUE
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,SAS]] CTLSPEC AG EF  RODS_UP[[viewpoint_division]]  --# TRUE
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PAS,SAS]] CTLSPEC AG EF !RODS_UP[[viewpoint_division]]  --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 0.2 No contradictory outputs
+--# [SAS-specific]
+[[REQ pattern=isolated viewpoint=SAS_ALU]] LTLSPEC G !(SAS_ALU[[viewpoint_division]].RODS_DOWN & SAS_ALU[[viewpoint_division]].RODS_UP) --# TRUE
+
+--# [PACS-specific]
+--# [L2 as a whole]
+[[REQ pattern=isolated viewpoint=PACS2]] LTLSPEC G !(PACS2[[viewpoint_division]].CMDOFF & PACS2[[viewpoint_division]].CMDON)  --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 1.1
+--# The stepwise trip consists of a sequence where the control rods are driven down for 3s, then a pause of 12s occurs, and the cycle then repeats.
+--# A stepwise trip of the reactor is initiated if
+--# - the hot left temperature exceeds 300 C, or
+--# - the neutron flux exceeds 150 000 /s, or
+--# - a manual trip command is given
+
+--# [PACS-specific]
+[[REQ pattern=isolated viewpoint=PACS2]] LTLSPEC G (PACS2[[viewpoint_division]].SFOFF2 -> PACS2[[viewpoint_division]].CMDOFF) --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 1.2 If the manual trip command is actuated during the 12s delay, the sequence starts anew with the 3s rods-down signal. 
+
+-- in the case of non-manual actuation, rods are driven down for 4 cycles and then not driven down for 6 cycles, but not for 7... - this may be due to the delay DELAY=9 in PULSE001
+-- TF(6, 7)
+#define R_1_1_NORMAL_START(u) LTLSPEC G(!MAN_TRIP_DIV1) -> G(LAST_12(!SAS_ALU[[viewpoint_division]].RODS_DOWN) & (R1_1_T_CRITERION | R1_1_NF_CRITERION) -> NEXT_3(SAS_ALU[[viewpoint_division]].RODS_DOWN) & X X X X(NEXT_##u(!SAS_ALU[[viewpoint_division]].RODS_DOWN)))
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_1_1_NORMAL_START(4)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_1_1_NORMAL_START(5)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_1_1_NORMAL_START(6)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_1_1_NORMAL_START(7)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_1_1_NORMAL_START(8)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_1_1_NORMAL_START(9)
+
+-- in the case of manual actuation
+--  we must ensure that there is no new resetting manual signal
+--  if so, the same holds
+--  also, since this is a reset, the history of LAST_12(!RODS_DOWN_SAS_DIV1) is not required 
+-- TF(6, 7)
+#define R_2_1(u) LTLSPEC G((H !MAN_TRIP_DIV1) & !SAS_ALU[[viewpoint_division]].RODS_DOWN -> X(MAN_TRIP_DIV1 & X(NEXT_10(!MAN_TRIP[[viewpoint_division]])) -> NEXT_3(SAS_ALU[[viewpoint_division]].RODS_DOWN) & X X X X(NEXT_##u(!SAS_ALU[[viewpoint_division]].RODS_DOWN))))
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_2_1(4)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_2_1(5)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_2_1(6)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_2_1(7)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_2_1(8)
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] R_2_1(9)
+
+--# Req 2.1 If the actuation criteria are no longer active, the drive order is reset after at most 3s.
+
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] PSLSPEC always {(!(R1_1_T_CRITERION | R1_1_NF_CRITERION | MAN_TRIP[[viewpoint_division]]))[*4]} |-> {!SAS_ALU[[viewpoint_division]].RODS_DOWN}!; --# TRUE
+
+----------------------------------------------------------------------------
+
+--# Req 3.1 The control rods are driven up, if
+--# - there is a "rods up" signal from PAS, and
+--# - the "SAS enable" signal from PS is active, and
+--# - the stepwise trip has not been actuated.
+
+[[REQ pattern=isolated viewpoint=SAS_ALU]] LTLSPEC G(SAS_ALU[[viewpoint_division]].CONTROL_RODS_UP & SAS_ALU[[viewpoint_division]].ENABLE_SAS_1 & SAS_ALU[[viewpoint_division]].ENABLE_SAS_2 & !SAS_ALU[[viewpoint_division]].RODS_DOWN & LAST_7(!SAS_ALU[[viewpoint_division]].RODS_DOWN) -> SAS_ALU[[viewpoint_division]].RODS_UP)
+
+----------------------------------------------------------------------------
+
+--# Req 4.1 No spurious actuation
+--# [SAS-specific]
+[[REQ pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]] LTLSPEC G (SAS_ALU[[viewpoint_division]].RODS_DOWN -> O (R1_1_T_CRITERION | R1_1_NF_CRITERION | MAN_TRIP[[viewpoint_division]]))   --# TRUE
+
+--# [PACS-specific]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> PS_ALU[[viewpoint_division]].RODS_DOWN | PACS2[[viewpoint_division]].SFOFF2 | PAS_DIV1.RODS_DOWN_GROUP_1 | O (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]])) --# TRUE
+
+--# [L2 as a whole]
+[[REQ pattern=ltl viewpoint=PACS2 single_failures=PAS,SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> PS_ALU[[viewpoint_division]].RODS_DOWN | PAS_DIV1.RODS_DOWN_GROUP_1 | O (R1_1_T_CRITERION | R1_1_NF_CRITERION | MAN_TRIP[[viewpoint_division]] | (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]])))   --# TRUE
+
+--# [SAS-specific]
+[[REQ pattern=isolated viewpoint=SAS_ALU]] LTLSPEC G (SAS_ALU[[viewpoint_division]].RODS_UP -> (SAS_ALU[[viewpoint_division]].CONTROL_RODS_UP & SAS_ALU[[viewpoint_division]].ENABLE_SAS_1 & SAS_ALU[[viewpoint_division]].ENABLE_SAS_2)) --# TRUE

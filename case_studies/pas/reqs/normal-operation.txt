@@ -1,0 +1,39 @@
+--###################### LEVEL 1 (NORMAL OPERATION, PAS ONLY) ######################
+
+-- No deadlocks ("universal reachability" in the papers)
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF  PAS_DIV1.RODS_UP_GROUP_1
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF !PAS_DIV1.RODS_UP_GROUP_1
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF  PAS_DIV1.RODS_UP_GROUP_2
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF !PAS_DIV1.RODS_UP_GROUP_2
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF  PAS_DIV1.RODS_DOWN_GROUP_1
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF !PAS_DIV1.RODS_DOWN_GROUP_1
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF  PAS_DIV1.RODS_DOWN_GROUP_2
+[[REQ pattern=ag_ef viewpoint=PAS]] CTLSPEC AG EF !PAS_DIV1.RODS_DOWN_GROUP_2
+
+--# If PS is active (on any division), the outputs of PAS are disabled
+
+[[REQ pattern=ltl viewpoint=PAS]] LTLSPEC G ((!PS_ALU_DIV1.ENABLE_PAS | !PS_ALU_DIV2.ENABLE_PAS | !PS_ALU_DIV3.ENABLE_PAS | !PS_ALU_DIV4.ENABLE_PAS) -> !PAS_DIV1.RODS_DOWN_GROUP_1 & !PAS_DIV1.RODS_UP_GROUP_1) --# TRUE
+
+--# The outputs are enabled after a delay of 3 cycles.
+
+[[REQ pattern=ltl viewpoint=PAS]] LTLSPEC G ((PAS_DIV1.RODS_DOWN_GROUP_1 | PAS_DIV1.RODS_UP_GROUP_1) -> (PS_ALU_DIV1.ENABLE_PAS & PS_ALU_DIV2.ENABLE_PAS & PS_ALU_DIV3.ENABLE_PAS & PS_ALU_DIV4.ENABLE_PAS) & Y (PS_ALU_DIV1.ENABLE_PAS & PS_ALU_DIV2.ENABLE_PAS & PS_ALU_DIV3.ENABLE_PAS & PS_ALU_DIV4.ENABLE_PAS) & Y Y (PS_ALU_DIV1.ENABLE_PAS & PS_ALU_DIV2.ENABLE_PAS & PS_ALU_DIV3.ENABLE_PAS & PS_ALU_DIV4.ENABLE_PAS)) --# TRUE
+
+--# The permitted power is calculated based on the number of Reactor Coolant Pumps running.
+--# For each RCP, the "in operation" signal is needs to be on for at least 5 cycles to be accounted for.
+
+--# Four RCP:s running -> permitted power 100%
+[[REQ pattern=ltl viewpoint=PAS]] LTLSPEC G (count(PAS_DIV1.content.ON_DELAY001.BO1, PAS_DIV1.content.ON_DELAY002.BO1, PAS_DIV1.content.ON_DELAY003.BO1, PAS_DIV1.content.ON_DELAY004.BO1) = 4 -> PAS_DIV1.content.PERM_POWER001.SP = 100) --# TRUE
+
+--# Three RCP:s running -> permitted power 75%
+LTLSPEC G (count(PAS_DIV1.content.ON_DELAY001.BO1, PAS_DIV1.content.ON_DELAY002.BO1, PAS_DIV1.content.ON_DELAY003.BO1, PAS_DIV1.content.ON_DELAY004.BO1) = 3 -> PAS_DIV1.content.PERM_POWER001.SP = 75) --# TRUE
+
+--# Two RCP:s running -> permitted power 15%
+[[REQ pattern=ltl viewpoint=PAS]] LTLSPEC G (count(PAS_DIV1.content.ON_DELAY001.BO1, PAS_DIV1.content.ON_DELAY002.BO1, PAS_DIV1.content.ON_DELAY003.BO1, PAS_DIV1.content.ON_DELAY004.BO1) = 2 -> PAS_DIV1.content.PERM_POWER001.SP = 15) --# TRUE
+
+--# Less than two RCP:s running -> permitted power 0%
+[[REQ pattern=ltl viewpoint=PAS]] LTLSPEC G (count(PAS_DIV1.content.ON_DELAY001.BO1, PAS_DIV1.content.ON_DELAY002.BO1, PAS_DIV1.content.ON_DELAY003.BO1, PAS_DIV1.content.ON_DELAY004.BO1) < 2 -> PAS_DIV1.content.PERM_POWER001.SP = 0) --# TRUE
+
+--# The PID controlled drives the rods based on the difference between the neutron power and the permitted power.
+
+--# If neutron power exceeds 100%, the "rods up" command is disabled.
+[[REQ pattern=ltl viewpoint=PAS]] LTLSPEC G (N_FLUX_NS_DIV1 > 100 -> !PAS_DIV1.RODS_UP_GROUP_1) --# TRUE

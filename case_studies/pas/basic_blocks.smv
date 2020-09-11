@@ -1,0 +1,431 @@
+--# AND Function
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] TELEPERM XS - A Digital Reactor Protection System - https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE AND_2(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED)
+	VAR
+
+	DEFINE
+		BO1:=
+		case
+			!BI1_CONNECTED & !BI2_CONNECTED : FALSE;
+			TRUE : (!BI1_CONNECTED | BI1) & (!BI2_CONNECTED | BI2); 
+		esac;
+		BO1_FAULT:= BI1_FAULT | BI2_FAULT; --# Passive status processing [2]
+
+	ASSIGN
+
+
+--# OR Function
+--# 
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] TELEPERM XS - A Digital Reactor Protection System - https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE OR_4(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED, BI3, BI3_FAULT, BI3_CONNECTED, BI4, BI4_FAULT, BI4_CONNECTED)
+	VAR
+
+	DEFINE
+		BO1:= BI1 | BI2 | BI3 | BI4;  
+		BO1_FAULT:= BI1_FAULT | BI2_FAULT | BI3_FAULT | BI4_FAULT;  --# Passive status processing [2]
+
+	ASSIGN
+
+
+--# OR Function
+--# 
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] TELEPERM XS - A Digital Reactor Protection System - https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE OR_2(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED)
+	VAR
+
+	DEFINE
+		BO1:= BI1 | BI2;
+		BO1_FAULT:= BI1_FAULT | BI2_FAULT; --# Passive status processing [2]
+
+	ASSIGN
+
+
+--# AND Function
+--# 
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] TELEPERM XS - A Digital Reactor Protection System - https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE AND_4(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED, BI3, BI3_FAULT, BI3_CONNECTED, BI4, BI4_FAULT, BI4_CONNECTED)
+	VAR
+
+	DEFINE
+		BO1:=
+		case
+			!BI1_CONNECTED & !BI2_CONNECTED & !BI3_CONNECTED & !BI4_CONNECTED : FALSE;
+			TRUE : (!BI1_CONNECTED | BI1) & (!BI2_CONNECTED | BI2) & (!BI3_CONNECTED | BI3) & (!BI4_CONNECTED | BI4); 
+		esac;
+		BO1_FAULT:= BI1_FAULT | BI2_FAULT | BI3_FAULT | BI4_FAULT; --# Passive status processing [2]
+
+	ASSIGN
+
+
+--# Description: 
+--# Name: PACS_RS
+MODULE PACS_RS(SET, SET_FAULT, SET_CONNECTED, RESET, RESET_FAULT, RESET_CONNECTED)
+	VAR
+		mem : boolean;
+
+	DEFINE
+		OUT:= 
+		case
+			RESET : FALSE;
+			SET : TRUE;
+			TRUE: mem;
+		esac;
+		OUT_FAULT:= FALSE;
+
+	ASSIGN
+		init(mem) := FALSE;
+		next(mem) := OUT;
+
+--# AUX: Fault status masking (analog signal)
+--#
+MODULE NFA(IN0, IN0_FAULT, IN0_CONNECTED)
+	VAR
+
+	DEFINE
+		OUT0:= IN0;
+		OUT0_FAULT:= FALSE;
+
+	ASSIGN
+
+
+--# On Time Delay
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE ON_DELAY(BI1, BI1_FAULT, BI1_CONNECTED, time)
+VAR
+	
+	timeLeft : 0..10;			--# Time left (in processor cycles) on the on delay
+
+DEFINE	
+
+	BO1 :=
+	case
+		!BI1 : FALSE;
+		BI1 & (timeLeft = 0) : TRUE;
+		TRUE : FALSE;
+	esac;
+	
+	BO1_FAULT := BI1_FAULT;   --# Passive status processing [2]
+
+ASSIGN
+	init(timeLeft) := time;
+	next(timeLeft) :=
+	case
+		BI1 & (timeLeft = 0) : 0;
+		BI1 & (timeLeft > 0) : timeLeft - 1;
+		TRUE : time;
+	esac;
+
+--# High Treshold
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] TELEPERM XS - A Digital Reactor Protection System - https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE HIGH_TRESH(AI1, AI1_FAULT, AI1_CONNECTED, Max_)
+	VAR
+
+	DEFINE
+		BO1:= (AI1 > Max_);
+		BO1_FAULT:= AI1_FAULT;   --# Passive status processing [2]
+
+	ASSIGN
+
+
+--# Low Treshold
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] TELEPERM XS - A Digital Reactor Protection System - https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE LOW_TRESH(AI1, AI1_FAULT, AI1_CONNECTED, Min_)
+	VAR
+
+	DEFINE
+		BO1:= (AI1 < Min_);
+		BO1_FAULT:= AI1_FAULT;  --# Passive status processing [2]
+
+	ASSIGN
+
+
+--# Memory with Set Priority
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE MEM_S(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED)
+	VAR
+		mem : boolean;
+		prevBI1 : boolean;
+		prevBI2 : boolean;
+
+	DEFINE
+
+		BO1:=
+		case
+			!prevBI1 & BI1 : TRUE;		
+			!prevBI2 & BI2 : FALSE;
+			TRUE : mem;
+		esac;
+		
+		
+		BO1_FAULT:= BI1_FAULT | BI2_FAULT;   --# Passive status processing [2]
+
+	ASSIGN
+		init(mem) := FALSE;
+		next(mem) := BO1;
+	
+		init(prevBI1) := FALSE;
+		next(prevBI1) := BI1;
+		
+		init(prevBI2) := FALSE;
+		next(prevBI2) := BI2;
+
+--# AUX: Default value substitution
+--#
+MODULE DFT_B(BI1, BI1_FAULT, BI1_CONNECTED, DefaultValue)
+	VAR
+
+	DEFINE
+		BO1:= BI1_FAULT ? DefaultValue : BI1;
+		BO1_FAULT:= FALSE;
+
+	ASSIGN
+
+
+--# 2 out of 4 Function
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] https://www.nrc.gov/docs/ML1322/ML13220A721.pdf
+MODULE _24(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED, BI3, BI3_FAULT, BI3_CONNECTED, BI4, BI4_FAULT, BI4_CONNECTED)
+	VAR
+
+	DEFINE
+			
+		--# When a signal with a faulty status reaches the voting function block, 
+		--# the signal is disregarded through modification of the vote. 
+		--# This results in the output of the voting function block having a non-faulty status. [2]
+	
+		valids := count((!BI1_FAULT & BI1_CONNECTED),(!BI2_FAULT & BI2_CONNECTED),(!BI3_FAULT & BI3_CONNECTED),(!BI4_FAULT & BI4_CONNECTED));
+		votes := count((!BI1_FAULT & BI1_CONNECTED & BI1),(!BI2_FAULT & BI2_CONNECTED & BI2),(!BI3_FAULT & BI3_CONNECTED & BI3),(!BI4_FAULT & BI4_CONNECTED & BI4));
+	
+		BO1:=
+		case
+			valids > 2 : votes >= 2;
+			valids > 0 : votes >= 1;
+			TRUE : FALSE;
+		esac;
+		
+		BO1_FAULT:= FALSE;
+		
+	ASSIGN
+
+--# 3 out of 4 Function
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] https://www.nrc.gov/docs/ML1322/ML13220A721.pdf
+MODULE _34(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED, BI3, BI3_FAULT, BI3_CONNECTED, BI4, BI4_FAULT, BI4_CONNECTED)
+	VAR
+
+	DEFINE
+				
+		--# When a signal with a faulty status reaches the voting function block, 
+		--# the signal is disregarded through modification of the vote. 
+		--# This results in the output of the voting function block having a non-faulty status. [2]
+	
+		valids := count((!BI1_FAULT & BI1_CONNECTED),(!BI2_FAULT & BI2_CONNECTED),(!BI3_FAULT & BI3_CONNECTED),(!BI4_FAULT & BI4_CONNECTED));
+		votes := count((!BI1_FAULT & BI1_CONNECTED & BI1),(!BI2_FAULT & BI2_CONNECTED & BI2),(!BI3_FAULT & BI3_CONNECTED & BI3),(!BI4_FAULT & BI4_CONNECTED & BI4));
+	
+		BO1:=
+		case
+			valids = 4 : votes >= 3;
+			valids = 3 : votes = 3;
+			valids = 2 : votes = 2;
+			valids = 1 : votes = 1;
+			TRUE : FALSE;
+		esac;
+		
+		BO1_FAULT:= FALSE;
+
+	ASSIGN
+
+
+--# NOT
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE NOT(BI1, BI1_FAULT, BI1_CONNECTED)
+	VAR
+
+	DEFINE
+		BO1:= !BI1;
+		BO1_FAULT:= BI1_FAULT;   --# Passive status processing [2]
+
+	ASSIGN
+
+
+--# AUX: Fault status masking (binary signal)
+--#
+--# 
+MODULE NF(IN0, IN0_FAULT, IN0_CONNECTED)
+	VAR
+
+	DEFINE
+		OUT0:= IN0;
+		OUT0_FAULT:= FALSE;
+
+	ASSIGN
+
+
+--# 1 out of 2 Function
+--#
+--# 
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] https://www.nrc.gov/docs/ML1322/ML13220A721.pdf
+MODULE _12(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED)
+	VAR
+
+	DEFINE
+	
+		--# When a signal with a faulty status reaches the voting function block, 
+		--# the signal is disregarded through modification of the vote. 
+		--# This results in the output of the voting function block having a non-faulty status. [2]
+	
+		valids := count((!BI1_FAULT & BI1_CONNECTED),(!BI2_FAULT & BI2_CONNECTED));
+		votes := count((!BI1_FAULT & BI1_CONNECTED & BI1),(!BI2_FAULT & BI2_CONNECTED & BI2));
+	
+		BO1:=
+		case
+			valids = 2 : votes >= 1;
+			valids = 1 : votes = 1;
+			TRUE : FALSE;
+		esac;
+		
+		BO1_FAULT:= FALSE;
+
+
+	ASSIGN
+
+--# Pulse
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE PULSE(BI1, BI1_FAULT, BI1_CONNECTED, BI2, BI2_FAULT, BI2_CONNECTED, time)
+	VAR
+	PrevIn : boolean;
+	PrevOut : boolean;
+	timeLeft : 0..10;			--# Time left (in processor cycles) on the clock during the pulse
+
+DEFINE	
+
+	BO1 := 
+	case
+		BI2 : FALSE;				
+		timeLeft > 0 : TRUE;
+		!PrevOut & !PrevIn & BI1 : TRUE;
+
+		TRUE : FALSE;
+	esac;
+
+	BO1_FAULT := BI1_FAULT | BI2_FAULT;  --# Passive status processing [2]
+
+
+ASSIGN
+	init(PrevIn) := FALSE;	
+	next(PrevIn) :=	BI1;
+
+	init(PrevOut) := FALSE;
+	next(PrevOut) := BO1;	
+	
+	init(timeLeft) := 0;
+	next(timeLeft) :=
+	case
+		BI2 : 0;
+		timeLeft > 0 : timeLeft - 1;
+		!PrevOut & !PrevIn & BI1 : time;
+		TRUE : 0;
+	esac;
+
+--# Description: 
+--# Name: DELAY
+MODULE DELAY(BI1, BI1_FAULT, BI1_CONNECTED, InitValue)
+	VAR
+		mem : boolean;
+		mem_FAULT : boolean;
+		
+	DEFINE
+		BO1:= mem;
+		BO1_FAULT:= mem_FAULT;
+
+	ASSIGN
+		init(mem) := InitValue;
+		next(mem) := BI1;
+		
+		init(mem_FAULT) := FALSE;
+		next(mem_FAULT) := BI1_FAULT;
+
+--# NON-SAFETY LOGIC (made up)
+--# Description: Permitted power calculation
+--# Name: PERM_POWER
+MODULE PERM_POWER(INOP1, INOP1_FAULT, INOP1_CONNECTED, INOP2, INOP2_FAULT, INOP2_CONNECTED, INOP3, INOP3_FAULT, INOP3_CONNECTED, INOP4, INOP4_FAULT, INOP4_CONNECTED)
+	VAR
+
+	DEFINE
+	
+		RCPs_IN_OP := count(INOP1,INOP2,INOP3,INOP4);
+	
+		SP:= 
+		case
+			RCPs_IN_OP = 4 : 100;
+			RCPs_IN_OP = 3 : 75;
+			RCPs_IN_OP = 2 : 15;
+			TRUE : 0;
+		esac;
+		
+		SP_FAULT:= FALSE;
+
+	ASSIGN
+
+
+--# NON-SAFETY LOGIC (made up)
+--# Description: Dummy PID controller
+--# Name: PID
+MODULE PID(DIFF, DIFF_FAULT, DIFF_CONNECTED)
+	VAR
+
+	DEFINE
+		CLOSE:= (DIFF < 0);
+		CLOSE_FAULT:= FALSE;
+		OPEN:= (DIFF > 0);
+		OPEN_FAULT:= FALSE;
+
+	ASSIGN
+
+
+--# Analog Summation
+--#
+--# Source documents:
+--#	- [1] U.S. EPR FSAR - https://www.nrc.gov/docs/ML1322/ML13220A726.pdf
+--# - [2] TELEPERM XS - A Digital Reactor Protection System - https://www.nrc.gov/docs/ML0037/ML003732662.pdf
+MODULE SUM(AI1, AI1_FAULT, AI1_CONNECTED, AI2, AI2_FAULT, AI2_CONNECTED)
+	VAR
+
+	DEFINE
+		AO1:= AI1 - AI2;
+		AO1_FAULT:= AI1_FAULT | AI2_FAULT; --# Passive status processing [2]
+
+	ASSIGN

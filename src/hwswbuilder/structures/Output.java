@@ -6,13 +6,13 @@ import hwswbuilder.command.Workspace;
 import java.util.*;
 
 public class Output extends IndexableEntity<UnitGroup> implements CodeProducer {
-    private final Map<Integer, Indexing> inputConnections = new LinkedHashMap<>();
+    private final Map<Integer, Indexing<?>> inputConnections = new LinkedHashMap<>();
 
     public Output(String name, UnitGroup parentUnitGroup) {
         super(name, parentUnitGroup, parentUnitGroup.divisions);
     }
 
-    public void addInputConnection(Indexing from) {
+    public void addInputConnection(Indexing<?> from) {
         inputConnections.put(inputConnections.size() + 1, from);
     }
 
@@ -23,8 +23,8 @@ public class Output extends IndexableEntity<UnitGroup> implements CodeProducer {
      * @param div: given division index.
      * @return effective division.
      */
-    private static int effectiveDivision(NamedEntity input, int div) {
-        for (NamedEntity current = input; current != null; current = current.parent()) {
+    private static int effectiveDivision(NamedEntity<?> input, int div) {
+        for (NamedEntity<?> current = input; current != null; current = current.parent()) {
             if (current instanceof Unit) {
                 return ((Unit) current).effectiveDivision(div);
             }
@@ -41,7 +41,7 @@ public class Output extends IndexableEntity<UnitGroup> implements CodeProducer {
         }
         for (int div : allDivisions) {
             final int effectiveDiv = effectiveDivision(inputConnections.get(div), div);
-            final Indexing input = inputConnections.get(effectiveDiv);
+            final Indexing<?> input = inputConnections.get(effectiveDiv);
             final boolean optimizing = div != effectiveDiv;
             final String optimizationText = optimizing
                     ? "; -- (replaced with the version from DIV1 due to unit optimization)" : "";
@@ -52,7 +52,7 @@ public class Output extends IndexableEntity<UnitGroup> implements CodeProducer {
                 final UnitOutput o = (UnitOutput) input.parent;
                 if (o.parent.parent.shouldInjectFailure(div)) {
                     final InputInfo info = new InputInfo(name, o.nusmvType, div, true);
-                    info.failureDecl(deferredName).forEach(s ->
+                    info.failureDecl(deferredName, workspace).forEach(s ->
                             workspace.addVar((optimizing ? "-- (optimized out) " : "") + s));
                     if (!optimizing) {
                         effectiveName = info.failureName(true);

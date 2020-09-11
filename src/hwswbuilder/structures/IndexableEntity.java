@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public abstract class IndexableEntity<P extends NamedEntity> extends NamedEntity<P> {
+public abstract class IndexableEntity<P extends NamedEntity<?>> extends NamedEntity<P> {
     public final int divisions;
     final Collection<Integer> allDivisions;
 

@@ -4,6 +4,9 @@ import hwswbuilder.NameSubstitutionRegistry;
 import hwswbuilder.command.Workspace;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -11,10 +14,12 @@ import java.util.stream.Stream;
 
 public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
     private final String moduleName;
-    private final String nusmvFilename;
+    private final String nusmvCode;
     private final int singleDivisionToRetain;
     private final int maxDelay;
     private final Map<String, UnitOutput> outputs = new LinkedHashMap<>();
+    private final UnitGroup parentAsUnitGroup;
+    private final List<String> sourceInputNames;
 
     private boolean shouldOptimizeOut(int div) {
         return singleDivisionToRetain > -1 && div != singleDivisionToRetain;
@@ -25,24 +30,50 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
     }
 
     // inputConnections[division of this subnetwork][connection index]
-    private final Map<Integer, List<NamedEntity>> inputConnections = new LinkedHashMap<>();
+    private final Map<Integer, List<NamedEntity<?>>> inputConnections = new LinkedHashMap<>();
 
     public final Map<String, UnitOutput> outputs() {
         return Collections.unmodifiableMap(outputs);
     }
 
     public Unit(String name, UnitGroup parentUnitGroup, String moduleName, String nusmvFilename,
-                int singleDivisionToRetain, int maxDelay, Map<String, String> outputsWithTypes) {
+                int singleDivisionToRetain, int maxDelay, Map<String, String> outputsWithTypes, String directoryPath) throws IOException {
         super(name, parentUnitGroup, parentUnitGroup.divisions);
+        this.parentAsUnitGroup = parentUnitGroup;
         this.moduleName = moduleName;
-        this.nusmvFilename = nusmvFilename;
         allDivisions.forEach(i -> inputConnections.put(inputConnections.size() + 1, new ArrayList<>()));
         this.singleDivisionToRetain = singleDivisionToRetain;
         this.maxDelay = maxDelay;
         outputsWithTypes.forEach((oName, oType) -> outputs.put(oName, new UnitOutput(oName, oType, this)));
+        nusmvCode = new String(Files.readAllBytes(Paths.get(directoryPath, nusmvFilename)));
+
+        String argLine = null;
+        // read variable names as declared in the NuSMV code
+        for (String line : nusmvCode.split("\r?\n")) {
+            line = line.strip();
+            if (line.startsWith("MODULE ")) {
+                argLine = line;
+                break;
+            }
+        }
+        if (argLine == null) {
+            throw new RuntimeException("No suitable declaration line in NuSMV code in " + nusmvFilename);
+        }
+        argLine = argLine.split("\\(")[1];
+        argLine = argLine.split("\\)")[0];
+        sourceInputNames = Arrays.asList(argLine.split(",\\s*"));
     }
 
-    public void addInputConnection(NamedEntity from, int targetDivision) {
+    @Override
+    public UnitGroup parent() {
+        return parentAsUnitGroup;
+    }
+
+    public Map<Integer, List<NamedEntity<?>>> getInputConnections() {
+        return inputConnections;
+    }
+
+    public void addInputConnection(NamedEntity<?> from, int targetDivision) {
         if (!allDivisions.contains(targetDivision)) {
             throw new RuntimeException("Division out of range: " + targetDivision
                     + " in subnetwork " + toNuSMV());
@@ -60,17 +91,17 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
                 argName + "_FAULT", "TRUE" /*_CONNECTED */).forEach(destination::add);
     }
 
-    private static String wrapperInputFromUnitArgName(NamedEntity inputParent) {
+    private static String wrapperInputFromUnitArgName(NamedEntity<?> inputParent) {
         return inputParent.parent.toNuSMV() + "_" + inputParent.name;
     }
 
-    private List<InputInfo> createInputs(NamedEntity inputConnection, int currentDivision) {
+    private List<InputInfo> createInputs(NamedEntity<?> inputConnection, int currentDivision) {
         if (inputConnection instanceof Constant) {
             return Collections.singletonList(new InputInfo(inputConnection.name));
         }
         final boolean alwaysInjectInputFailures = parent.shouldInjectFailure(currentDivision);
-        final NamedEntity inputParent = inputConnection.parent;
-        final Indexing inputConnectionInd = (Indexing) inputConnection;
+        final NamedEntity<?> inputParent = inputConnection.parent;
+        final Indexing<?> inputConnectionInd = (Indexing<?>) inputConnection;
         if (inputParent instanceof Input) {
             // for plain inputs, failure injection is governed by the current division
             // but if the inputs originate from a different unit group, this may also be a reason for a failure
@@ -112,24 +143,24 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         final List<InputInfo> inputs = new ArrayList<>();
         inputConnections.get(currentDivision)
                 .forEach(input -> inputs.addAll(createInputs(input, currentDivision)));
-        sb.append("(");
-        sb.append(inputs.stream().filter(i -> !i.isConstant)
+        final List<String> arguments = inputs.stream().filter(i -> !i.isConstant)
                 .map(i -> SEP + PAD + i.argName + ", " + i.argName + "_FAULT, "
-                + i.argName + "_CONNECTED").collect(Collectors.joining(", ")));
-        sb.append(")").append(SEP);
+                        + i.argName + "_CONNECTED").collect(Collectors.toCollection(ArrayList::new));
+        arguments.add("FAILURE_VANISHED");
+        sb.append("(").append(String.join(", ", arguments)).append(")").append(SEP);
         sb.append("VAR").append(SEP);
 
         final Map<String, String> nameReplacements = new HashMap<>();
 
         // DELAY HANDLING
-        final Map<Pair<NamedEntity, Integer>, List<InputInfo>> delayGroups
+        final Map<Pair<NamedEntity<?>, Integer>, List<InputInfo>> delayGroups
                 = new LinkedHashMap<>();
         // all plain inputs are delayed independently
-        for (NamedEntity input : inputConnections.get(currentDivision)) {
+        for (NamedEntity<?> input : inputConnections.get(currentDivision)) {
             // constants are not delayed
             if (input instanceof Indexing) {
-                final Indexing ind = (Indexing) input;
-                final NamedEntity parent = ind.parent;
+                final Indexing<?> ind = (Indexing<?>) input;
+                final NamedEntity<?> parent = ind.parent;
                 if (parent instanceof Input) {
                     final var info = new InputInfo(parent.name, ((Input) parent).nusmvType,
                             ind.index, false);
@@ -137,7 +168,7 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
                 } else if (parent instanceof UnitOutput) {
                     final var info = new InputInfo(wrapperInputFromUnitArgName(parent),
                             ((UnitOutput) parent).nusmvType, ind.index, false);
-                    final var p = Pair.of(parent.parent, ind.index);
+                    final Pair<NamedEntity<?>, Integer> p = Pair.of(parent.parent, ind.index);
                     delayGroups.putIfAbsent(p, new ArrayList<>());
                     delayGroups.get(p).add(info);
                 }
@@ -145,7 +176,7 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         }
         // need one sequence of delay blocks per group
         for (var e : delayGroups.entrySet()) {
-            final NamedEntity source = e.getKey().getLeft();
+            final NamedEntity<?> source = e.getKey().getLeft();
             final int sourceDiv = e.getKey().getRight();
             if (maxDelay > 0) {
                 sb.append(PAD).append("-- delay modules for ").append(source.toNuSMV())
@@ -187,7 +218,8 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
             final String effectiveName = nameReplacements.getOrDefault(i.argName, i.argName);
             nameReplacements.put(i.argName, i.failureName(true));
             sb.append(PAD).append("-- fault injection modules for ").append(i.argName).append(SEP);
-            i.failureDecl(effectiveName).forEach(s -> sb.append(PAD).append(s).append(";").append(SEP));
+            i.failureDecl(effectiveName, workspace)
+                    .forEach(s -> sb.append(PAD).append(s).append(";").append(SEP));
             failureChunks.add(i.failureName(false) + ".FAILURE");
         });
 
@@ -205,11 +237,13 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         sb.append(");").append(SEP);
         sb.append("DEFINE").append(SEP);
         sb.append(Workspace.failureFlagDeclaration(failureChunks)).append(SEP);
+
+        final List<String> redeclaredNames = new ArrayList<>(sourceInputNames);
         for (String postfix : Arrays.asList("", "_FAULT")) {
-            sb.append(outputs.keySet().stream()
-                    .map(out -> PAD + out + postfix + " := content."+ out + postfix + ";")
-                    .collect(Collectors.joining(SEP))).append(SEP);
+            outputs.keySet().stream().map(s -> s + postfix).forEach(redeclaredNames::add);
         }
+        sb.append(redeclaredNames.stream().map(s -> PAD + s + " := content."+ s + ";")
+                .collect(Collectors.joining(SEP))).append(SEP);
         return sb.toString();
     }
 
@@ -222,13 +256,14 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
                     .unitWrapper(getWrapper(div, workspace), moduleName, div);
             // input handling
             final List<String> arguments = new ArrayList<>();
-            for (NamedEntity e : inputConnections.get(div)) {
+            for (NamedEntity<?> e : inputConnections.get(div)) {
                 // constants are only substituted inside the wrapper
                 if (!(e instanceof Constant)) {
                     final String deferredName = NameSubstitutionRegistry.deferName(e.toNuSMV());
                     addArgument(arguments, deferredName, !optimizing);
                 }
             }
+            arguments.add("FAILURE_VANISHED");
             final String fullName = appendIndex(div);
             final String comment = optimizing ? "-- (optimized out) " : "";
             workspace.addVar(comment + fullName + ": " + effectiveModuleName
@@ -239,8 +274,8 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         }
     }
 
-    public String nusmvFilename() {
-        return nusmvFilename;
+    public String nusmvCode() {
+        return nusmvCode;
     }
 
     public int symmetryInputVariableNumber() {
@@ -252,7 +287,7 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         int varIndex = 1;
         // if the configuration is correct, all divisions are the same in terms of
         // input variable types
-        for (NamedEntity e : inputConnections.get(1)) {
+        for (NamedEntity<?> e : inputConnections.get(1)) {
             // resolve the type of corresponding input variable
             final RuntimeException unexpected = new RuntimeException(String.format(
                     "Input connection %s to unit %s of unexpected type", e, this));

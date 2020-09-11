@@ -1,6 +1,6 @@
 package hwswbuilder.structures;
 
-public abstract class NamedEntity<P extends NamedEntity> {
+public abstract class NamedEntity<P extends NamedEntity<?>> {
     final String name;
     final P parent;
     public final static String SEP = System.lineSeparator();
@@ -13,7 +13,7 @@ public abstract class NamedEntity<P extends NamedEntity> {
 
     public abstract String toNuSMV();
 
-    public NamedEntity parent() {
+    public NamedEntity<?> parent() {
         return parent;
     }
 

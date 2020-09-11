@@ -39,12 +39,14 @@ public interface CodeProducer {
          * @param arg: argument name.
          * @return fault: module declaration.
          */
-        List<String> failureDecl(String arg) {
+        List<String> failureDecl(String arg, Workspace workspace) {
             assert !isConstant;
+            final String blockName = workspace.vanishingFailures ?
+                    "INJECT_VANISHING_FAILURE" : "INJECT_FAILURE";
             return Arrays.asList(
                     String.format("%s_SUBS: %s", arg, nusmvType),
-                    String.format("%s: INJECT_FAILURE(%s, %s_FAULT, TRUE, %s_SUBS, FALSE, TRUE)",
-                            failureName(false), arg, arg, arg)
+                    String.format("%s: %s(%s, %s_FAULT, TRUE, %s_SUBS, FALSE, TRUE, FAILURE_VANISHED)",
+                            failureName(false), blockName, arg, arg, arg)
             );
         }
 
