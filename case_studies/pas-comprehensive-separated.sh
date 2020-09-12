@@ -4,7 +4,7 @@ conffile="pas/ps_sas_pacs_pas.conf"
 log_prefix="pas/results_pas_comprehensive"
 mkdir -p "$log_prefix"
 
-timeout=60s
+timeout=300s
 
 verification_script=./verify-with-timeout.sh
 #verification_script=./skip-verification.sh
@@ -12,7 +12,7 @@ verification_script=./verify-with-timeout.sh
 for delays in nodelays; do
 #for delays in nodelays withdelays; do
     if [[ $delays == withdelays ]]; then
-        DELAY_BEFORE=2
+        DELAY_BEFORE=3
         DELAY_AFTER=6
     else
         DELAY_BEFORE=0
