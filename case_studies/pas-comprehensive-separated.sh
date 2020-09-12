@@ -2,7 +2,7 @@
 
 conffile="pas/ps_sas_pacs_pas.conf"
 log_prefix="pas/results_pas_comprehensive"
-mkdir -p "$log_prefix"
+mkdir -p "$log_prefix" prolog
 
 timeout=300s
 
