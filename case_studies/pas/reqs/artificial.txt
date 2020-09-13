@@ -29,10 +29,10 @@
 
 -- PACS
 
-[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF  RODS_DOWN[[viewpoint_division]]
-[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF !RODS_DOWN[[viewpoint_division]]
-[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF  RODS_UP[[viewpoint_division]]
-[[REQ pattern=deadlock viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF !RODS_UP[[viewpoint_division]]
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF  RODS_DOWN[[viewpoint_division]]
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF !RODS_DOWN[[viewpoint_division]]
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF  RODS_UP[[viewpoint_division]]
+[[REQ pattern=ag_ef viewpoint=PACS2 single_failures=PS,PAS,SAS]] CTLSPEC AG EF !RODS_UP[[viewpoint_division]]
 
 [[REQ pattern=ltl viewpoint=PACS2 single_failures=PS,PAS,SAS]] LTLSPEC G (RODS_DOWN[[viewpoint_division]] -> PS_ALU[[viewpoint_division]].RODS_DOWN | PACS2[[viewpoint_division]].SFOFF2 | PAS_DIV1.RODS_DOWN_GROUP_1 | O (MAN_OFF[[viewpoint_division]] & !MAN_STOP[[viewpoint_division]]))
 
