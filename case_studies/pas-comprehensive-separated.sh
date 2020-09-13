@@ -21,10 +21,10 @@ for delays in nodelays; do
     SUBST="MAX_DELAY_PS_APU=$DELAY_BEFORE; MAX_DELAY_PS_ALU=$DELAY_AFTER; MAX_DELAY_SAS_APU=$DELAY_BEFORE; MAX_DELAY_SAS_ALU=$DELAY_AFTER; MAX_DELAY_PACS=$DELAY_AFTER; MAX_DELAY_PAS=$DELAY_BEFORE"
     #for reqfile in reactor-protection; do
     for reqfile in normal-operation preventive-protection reactor-protection artificial; do
-        #for pattern in deadlock; do
-        for pattern in ltl isolated deadlock; do
+        #for pattern in ag_ef; do
+        for pattern in ltl isolated ag_ef; do
             algos=bdd
-            if [[ $pattern != deadlock ]]; then
+            if [[ $pattern != ag_ef ]]; then
                 algos="$algos bmc"
             fi
             
