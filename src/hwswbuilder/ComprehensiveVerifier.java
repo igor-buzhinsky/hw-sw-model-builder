@@ -66,6 +66,10 @@ public class ComprehensiveVerifier {
             usage = "write log int this file for verification with failures", required = true)
     private String logFilenameWithFailures;
 
+    @Option(name = "--optimizeOutUnreachable", handler = BooleanOptionHandler.class,
+            usage = "optimize out unreachable unit instances from the formal model")
+    private boolean optimizeOutUnreachable;
+
     public static void main(String[] args) {
         new ComprehensiveVerifier().run(args);
     }
@@ -245,6 +249,9 @@ public class ComprehensiveVerifier {
                 final String substString = String.join("; ", augmentedSubstitutions);
                 final Workspace workspace = Main.createWorkspace(configFilename, substString, false,
                         false, printToConsole);
+                if (optimizeOutUnreachable) {
+                    workspace.coiOptimize(workspace.getUnitByName(viewpointUnit.toNuSMV()), conf.viewpointDivision());
+                }
                 final String nusmvModel = workspace.toNuSMV();
                 if (printToConsole) {
                     System.out.println(nusmvModel);

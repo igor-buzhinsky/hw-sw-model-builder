@@ -23,7 +23,7 @@ public class Output extends IndexableEntity<UnitGroup> implements CodeProducer {
      * @param div: given division index.
      * @return effective division.
      */
-    private static int effectiveDivision(NamedEntity<?> input, int div) {
+    private static Integer effectiveDivision(NamedEntity<?> input, int div) {
         for (NamedEntity<?> current = input; current != null; current = current.parent()) {
             if (current instanceof Unit) {
                 return ((Unit) current).effectiveDivision(div);
@@ -40,11 +40,15 @@ public class Output extends IndexableEntity<UnitGroup> implements CodeProducer {
                     name, divisions, inputConnections.size()));
         }
         for (int div : allDivisions) {
-            final int effectiveDiv = effectiveDivision(inputConnections.get(div), div);
+            final Integer effectiveDiv = effectiveDivision(inputConnections.get(div), div);
+            if (effectiveDiv == null) {
+                // the entire unit was optimized out
+                continue;
+            }
             final Indexing<?> input = inputConnections.get(effectiveDiv);
             final boolean optimizing = div != effectiveDiv;
             final String optimizationText = optimizing
-                    ? "; -- (replaced with the version from DIV1 due to unit optimization)" : "";
+                    ? "; -- (replaced with the version from DIV" + effectiveDiv + " due to unit optimization)" : "";
             final String deferredName = NameSubstitutionRegistry.deferName(input.toNuSMV());
             // fault processing
             String effectiveName = deferredName;

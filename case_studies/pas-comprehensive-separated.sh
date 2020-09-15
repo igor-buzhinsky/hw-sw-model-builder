@@ -28,7 +28,7 @@ for delays in nodelays; do
                 algos="$algos bmc"
             fi
             
-            #for viewpoint in PS; do
+            #for viewpoint in SAS; do
             for viewpoint in PAS PS SAS PACS; do
                 cp pas/reqs/declarations.txt tmpreq.txt
                 reqstr="\\[\\[REQ pattern=$pattern viewpoint=$viewpoint"
@@ -39,6 +39,7 @@ for delays in nodelays; do
                 else
                     coi=true
                 fi
+                
                 if grep -P "^$reqstr" tmpreq.txt > /dev/null; then
                     for algo in $algos; do
                         if [[ "$algo" == bdd ]]; then
@@ -48,9 +49,7 @@ for delays in nodelays; do
                         fi
                         prefix="$log_prefix/${delays}_${algo}_${reqfile}_${viewpoint}_${pattern}"
                         echo "*** $prefix ***"
-                        #read
-                        #touch "${prefix}_0f.txt" "${prefix}_1f.txt"
-                        java -ea -jar ../jars/comprehensive_verifier.jar "$conffile" --configSubstitutions "$SUBST" --prologFilename prolog/tmp.pl $@ --requirementsFilename tmpreq.txt --nusmvCommand "$verification_script $timeout $bmc_length $coi" --logFilenameWithoutFailures "${prefix}_0f.txt" --logFilenameWithFailures "${prefix}_1f.txt" #--checkSymmetryNuSMVCommand "NuSMV -coi -df"
+                        java -ea -jar ../jars/comprehensive_verifier.jar "$conffile" --configSubstitutions "$SUBST" --prologFilename prolog/tmp.pl $@ --requirementsFilename tmpreq.txt --nusmvCommand "$verification_script $timeout $bmc_length $coi" --logFilenameWithoutFailures "${prefix}_0f.txt" --logFilenameWithFailures "${prefix}_1f.txt" --optimizeOutUnreachable #--checkSymmetryNuSMVCommand "NuSMV -coi -df"
                         echo
                     done
                 fi

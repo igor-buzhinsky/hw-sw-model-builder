@@ -39,6 +39,48 @@ public class Workspace {
         return new LinkedHashMap<>(unitGroups);
     }
 
+    // disable unit instances that are unreachable from the viewpoint
+    public void coiOptimize(Unit viewpointUnit, int viewpointDivisions) {
+        final List<Pair<Unit, Integer>> queue = new LinkedList<>();
+        final Set<Pair<Unit, Integer>> processedInstances = new HashSet<>();
+        queue.add(Pair.of(viewpointUnit, viewpointDivisions));
+        while (!queue.isEmpty()) {
+            final Pair<Unit, Integer> element = queue.remove(0);
+            if (processedInstances.contains(element)) {
+                continue;
+            }
+            final Unit u = element.getLeft();
+            final int division = element.getRight();
+            for (NamedEntity<?> e : u.getInputConnections().get(division)) {
+                if (e instanceof Indexing) {
+                    NamedEntity<?> p = e.parent();
+                    if (p instanceof UnitOutput) {
+                        final Unit referencedUnit = ((UnitOutput) p).parent();
+                        final int referencedDivision = ((Indexing<?>) e).index;
+                        queue.add(Pair.of(referencedUnit, referencedDivision));
+                    }
+                }
+            }
+            processedInstances.add(element);
+        }
+        final Map<Unit, Set<Integer>> divisionsToKeep = new HashMap<>();
+        for (Unit u : units.values()) {
+            divisionsToKeep.put(u, new HashSet<>());
+        }
+        for (Pair<Unit, Integer> p : processedInstances) {
+            divisionsToKeep.get(p.getLeft()).add(p.getRight());
+        }
+        for (Map.Entry<Unit, Set<Integer>> e : divisionsToKeep.entrySet()) {
+            final Unit u = e.getKey();
+            for (int i = 1; i <= u.divisions; i++) {
+                if (!e.getValue().contains(i)) {
+                    u.disableDivison(i);
+                    System.out.println("Optimization: disabled division " + i + " of unit " + u);
+                }
+            }
+        }
+    }
+
     // if true, then failures can deterministically disappear (useful in deadlock checking)
     public boolean vanishingFailures = false;
 

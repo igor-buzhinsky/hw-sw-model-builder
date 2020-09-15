@@ -15,18 +15,29 @@ import java.util.stream.Stream;
 public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
     private final String moduleName;
     private final String nusmvCode;
-    private final int singleDivisionToRetain;
     private final int maxDelay;
     private final Map<String, UnitOutput> outputs = new LinkedHashMap<>();
     private final UnitGroup parentAsUnitGroup;
     private final List<String> sourceInputNames;
 
-    private boolean shouldOptimizeOut(int div) {
-        return singleDivisionToRetain > -1 && div != singleDivisionToRetain;
+    private final Set<Integer> divisionsToKeep = new TreeSet<>();
+
+    public void disableDivison(int div) {
+        divisionsToKeep.remove(div);
     }
 
-    int effectiveDivision(int div) {
-        return shouldOptimizeOut(div) ? singleDivisionToRetain : div;
+    private boolean shouldOptimizeOut(int div) {
+        return !divisionsToKeep.contains(div);
+    }
+
+    Integer effectiveDivision(int div) {
+        if (!shouldOptimizeOut(div)) {
+            return div;
+        } else if (divisionsToKeep.isEmpty()) {
+            return null;
+        } else {
+            return divisionsToKeep.iterator().next();
+        }
     }
 
     // inputConnections[division of this subnetwork][connection index]
@@ -42,7 +53,11 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         this.parentAsUnitGroup = parentUnitGroup;
         this.moduleName = moduleName;
         allDivisions.forEach(i -> inputConnections.put(inputConnections.size() + 1, new ArrayList<>()));
-        this.singleDivisionToRetain = singleDivisionToRetain;
+        if (singleDivisionToRetain != -1) {
+            divisionsToKeep.add(singleDivisionToRetain);
+        } else {
+            divisionsToKeep.addAll(allDivisions);
+        }
         this.maxDelay = maxDelay;
         outputsWithTypes.forEach((oName, oType) -> outputs.put(oName, new UnitOutput(oName, oType, this)));
         nusmvCode = new String(Files.readAllBytes(Paths.get(directoryPath, nusmvFilename)));
@@ -250,7 +265,7 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
     @Override
     public void nuSMVDeclaration(Workspace workspace) {
         for (int div : allDivisions) {
-            final boolean optimizing = shouldOptimizeOut(div);
+            final boolean optimizingOut = shouldOptimizeOut(div);
             // fault handling
             final String effectiveModuleName = workspace.handler
                     .unitWrapper(getWrapper(div, workspace), moduleName, div);
@@ -260,15 +275,15 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
                 // constants are only substituted inside the wrapper
                 if (!(e instanceof Constant)) {
                     final String deferredName = NameSubstitutionRegistry.deferName(e.toNuSMV());
-                    addArgument(arguments, deferredName, !optimizing);
+                    addArgument(arguments, deferredName, !optimizingOut);
                 }
             }
             arguments.add("FAILURE_VANISHED");
             final String fullName = appendIndex(div);
-            final String comment = optimizing ? "-- (optimized out) " : "";
+            final String comment = optimizingOut ? "-- (optimized out) " : "";
             workspace.addVar(comment + fullName + ": " + effectiveModuleName
                     + "(" + String.join(", ", arguments) + ")");
-            if (!optimizing) {
+            if (!optimizingOut) {
                 workspace.addFailureChunk(fullName + ".FAILURE");
             }
         }
