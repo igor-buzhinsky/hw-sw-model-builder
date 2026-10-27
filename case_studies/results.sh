@@ -20,7 +20,7 @@ cur_dir=$(pwd)
 time_list() {
     list=$(echo -n "$(echo $(perl "$cur_dir/calc-total-cpu-time.perl" < "$1"))" | sed 's/ /+/g')
     [[ "$list" == "" ]] && list=0
-    echo $(python -c "print('{:.2f}'.format($list))")" = $list"
+    echo $(python3 -c "print('{:.2f}'.format($list))")" = $list"
 }
 
 truth_list() {

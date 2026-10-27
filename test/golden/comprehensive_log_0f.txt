@@ -1,0 +1,18 @@
+--
+-- LTLSPEC G (SAS_ALU_DIV1.RODS_DOWN -> TRUE) with substitutions [MAX_DELAY_PS_APU=0; MAX_DELAY_PS_ALU=0; MAX_DELAY_SAS_APU=0; MAX_DELAY_SAS_ALU=0; MAX_DELAY_PACS=0; MAX_DELAY_PAS=0; VANISHING_FAILURES=false; REQ_FILENAME=.requirements.smv; PAS_FAULT_DIVISION=NA; PS_FAULT_DIVISION=NA; SAS_FAULT_DIVISION=NA] and annotation [pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]
+-- specification AG (fake) is true
+--
+-- LTLSPEC G (SAS_ALU_DIV1.RODS_UP -> TRUE) with substitutions [MAX_DELAY_PS_APU=0; MAX_DELAY_PS_ALU=0; MAX_DELAY_SAS_APU=0; MAX_DELAY_SAS_ALU=0; MAX_DELAY_PACS=0; MAX_DELAY_PAS=0; VANISHING_FAILURES=false; REQ_FILENAME=.requirements.smv; PAS_FAULT_DIVISION=NA; PS_FAULT_DIVISION=NA; SAS_FAULT_DIVISION=NA] and annotation [pattern=ltl viewpoint=SAS_ALU single_failures=PAS,SAS]
+-- specification AG (fake) is true
+--
+-- LTLSPEC G (!(PACS2_DIV1.CMDOFF & PACS2_DIV1.CMDON)) with substitutions [MAX_DELAY_PS_APU=0; MAX_DELAY_PS_ALU=0; MAX_DELAY_SAS_APU=0; MAX_DELAY_SAS_ALU=0; MAX_DELAY_PACS=0; MAX_DELAY_PAS=0; VANISHING_FAILURES=false; REQ_FILENAME=.requirements.smv; PAS_FAULT_DIVISION=NA; PS_FAULT_DIVISION=NA; SAS_FAULT_DIVISION=NA] and annotation [pattern=ltl viewpoint=PACS2 single_failures=PAS,PS all_failures=SAS]
+-- specification AG (fake) is true
+--
+-- LTLSPEC G (SAS_ALU_DIV1.RODS_UP -> TRUE) with substitutions [MAX_DELAY_PS_APU=0; MAX_DELAY_PS_ALU=0; MAX_DELAY_SAS_APU=0; MAX_DELAY_SAS_ALU=0; MAX_DELAY_PACS=0; MAX_DELAY_PAS=0; VANISHING_FAILURES=false; REQ_FILENAME=.requirements.smv; PAS_FAULT_DIVISION=NA; PS_FAULT_DIVISION=NA; SAS_FAULT_DIVISION=NA] and annotation [pattern=ltl viewpoint=SAS_ALU single_failures=PS,PAS,SAS]
+-- specification AG (fake) is true
+--
+-- LTLSPEC G (PS_APU_DIV1.HLEG_P > 70 -> TRUE) with substitutions [MAX_DELAY_PS_APU=0; MAX_DELAY_PS_ALU=0; MAX_DELAY_SAS_APU=0; MAX_DELAY_SAS_ALU=0; MAX_DELAY_PACS=0; MAX_DELAY_PAS=0; VANISHING_FAILURES=false; REQ_FILENAME=.requirements.smv; PAS_FAULT_DIVISION=NA; PS_FAULT_DIVISION=NA; SAS_FAULT_DIVISION=NA] and annotation [pattern=isolated viewpoint=PS_APU]
+-- specification AG (fake) is true
+--
+-- CTLSPEC AG EF PAS_DIV1.RODS_UP_GROUP_1 with substitutions [MAX_DELAY_PS_APU=0; MAX_DELAY_PS_ALU=0; MAX_DELAY_SAS_APU=0; MAX_DELAY_SAS_ALU=0; MAX_DELAY_PACS=0; MAX_DELAY_PAS=0; VANISHING_FAILURES=false; REQ_FILENAME=.requirements.smv; PAS_FAULT_DIVISION=NA; PS_FAULT_DIVISION=NA; SAS_FAULT_DIVISION=NA] and annotation [pattern=ag_ef viewpoint=PAS]
+-- specification AG (fake) is true

@@ -4,7 +4,7 @@ import hwswbuilder.structures.*;
 
 import java.util.Map;
 
-class SingleConnectionCommand extends ConnectionCommand {
+class SingleConnectionCommand extends Command {
     SingleConnectionCommand(Map<String, String> arguments, Workspace workspace) {
         super(arguments, workspace);
     }

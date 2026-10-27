@@ -67,19 +67,25 @@ public class Main {
     private boolean prologIncludeCCF;
 
     public static void main(String[] args) {
-        new Main().run(args);
+        final int exitCode = new Main().run(args);
+        if (exitCode != 0) {
+            System.exit(exitCode);
+        }
     }
 
-    private void run(String[] args) {
+    /**
+     * @return the exit code of the tool.
+     */
+    int run(String[] args) {
         Locale.setDefault(Locale.US);
         if (!parseArgs(args)) {
-            return;
+            return 0;
         }
         try {
-            launcher();
+            return launcher();
         } catch (IOException e) {
             e.printStackTrace();
-            System.exit(1);
+            return 1;
         }
     }
 
@@ -148,7 +154,7 @@ public class Main {
         return workspace;
     }
 
-    private void launcher() throws IOException {
+    private int launcher() throws IOException {
         System.out.println("Processing " + configFilename + "...");
         final Workspace workspace = createWorkspace(configFilename, substitutions, mimicMODCHK, false,
                 printToConsole);
@@ -189,10 +195,12 @@ public class Main {
             args.add(workspace.outputFilename());
             System.out.println("Running: " + String.join(" ", args));
             final Process p = new ProcessBuilder().inheritIO().command(args).start();
-            try {
-                p.waitFor();
-            } catch (InterruptedException ignored) {
+            final int exitCode = Processes.waitFor(p);
+            if (exitCode != 0) {
+                System.err.println("NuSMV command exited with non-zero status " + exitCode);
+                return exitCode;
             }
         }
+        return 0;
     }
 }

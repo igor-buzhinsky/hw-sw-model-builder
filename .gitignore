@@ -1,0 +1,18 @@
+# build output
+/build/
+/jar-classes/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# temporary files produced by the tools and scripts
+.symmetry-check.smv
+.requirements.smv
+.tmp*
+/case_studies/prolog/
+/case_studies/tmpreq.txt
+/case_studies/timed.cmd
+/case_studies/hw_sw_builder_generated/
+/case_studies/pas/results_pas_comprehensive/

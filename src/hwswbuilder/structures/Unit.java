@@ -1,6 +1,7 @@
 package hwswbuilder.structures;
 
 import hwswbuilder.NameSubstitutionRegistry;
+import hwswbuilder.command.Command;
 import hwswbuilder.command.Workspace;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -22,7 +23,7 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
 
     private final Set<Integer> divisionsToKeep = new TreeSet<>();
 
-    public void disableDivison(int div) {
+    public void disableDivision(int div) {
         divisionsToKeep.remove(div);
     }
 
@@ -53,7 +54,7 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
         this.parentAsUnitGroup = parentUnitGroup;
         this.moduleName = moduleName;
         allDivisions.forEach(i -> inputConnections.put(inputConnections.size() + 1, new ArrayList<>()));
-        if (singleDivisionToRetain != -1) {
+        if (singleDivisionToRetain != Command.NA_INDEX) {
             divisionsToKeep.add(singleDivisionToRetain);
         } else {
             divisionsToKeep.addAll(allDivisions);
@@ -222,7 +223,6 @@ public class Unit extends IndexableEntity<UnitGroup> implements CodeProducer {
                 // create a delayed name for each output
                 for (InputInfo info : infos) {
                     nameReplacements.put(info.argName, delayedName + ".OUT" + j);
-                    // sb.append("-- replace "+ info.argName + " -> " + delayedName + ".OUT" + j + SEP);
                     j++;
                 }
             }

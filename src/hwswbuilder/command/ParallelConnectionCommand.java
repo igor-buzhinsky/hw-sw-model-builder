@@ -4,7 +4,7 @@ import hwswbuilder.structures.*;
 
 import java.util.Map;
 
-class ParallelConnectionCommand extends ConnectionCommand {
+class ParallelConnectionCommand extends Command {
     ParallelConnectionCommand(Map<String, String> arguments, Workspace workspace) {
         super(arguments, workspace);
     }

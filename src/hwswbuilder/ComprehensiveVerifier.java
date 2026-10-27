@@ -59,11 +59,11 @@ public class ComprehensiveVerifier {
     private boolean prologThoroughQueries;
 
     @Option(name = "--logFilenameWithoutFailures", metaVar = "filename",
-            usage = "write log int this file for verification without failures", required = true)
+            usage = "write log into this file for verification without failures", required = true)
     private String logFilenameWithoutFailures;
 
     @Option(name = "--logFilenameWithFailures", metaVar = "filename",
-            usage = "write log int this file for verification with failures", required = true)
+            usage = "write log into this file for verification with failures", required = true)
     private String logFilenameWithFailures;
 
     @Option(name = "--optimizeOutUnreachable", handler = BooleanOptionHandler.class,
@@ -103,12 +103,12 @@ public class ComprehensiveVerifier {
     }
 
     private final Map<Pair<String, List<List<Integer>>>, List<VerificationConfiguration>>
-            memoizedPrologAlalysisResults = new HashMap<>();
+            memoizedPrologAnalysisResults = new HashMap<>();
 
     private List<VerificationConfiguration> memoizedPrologAnalysis(Workspace workspace,
             String viewpointUnit, List<List<Integer>> failingDivisions) throws IOException {
         final Pair<String, List<List<Integer>>> arg = Pair.of(viewpointUnit, failingDivisions);
-        List<VerificationConfiguration> precomputed = memoizedPrologAlalysisResults.get(arg);
+        List<VerificationConfiguration> precomputed = memoizedPrologAnalysisResults.get(arg);
         if (precomputed == null) {
             // create Prolog file
             final long timeBefore = System.nanoTime();
@@ -127,16 +127,15 @@ public class ComprehensiveVerifier {
             final long timeAfter = System.nanoTime();
             System.out.println(String.format("Symmetry analysis time: %.1f s",
                     (timeAfter - timeBefore) / 1.0e9));
-            memoizedPrologAlalysisResults.put(arg, precomputed);
+            memoizedPrologAnalysisResults.put(arg, precomputed);
         }
         return precomputed;
     }
 
     private List<String> getSubstitutionsString(String initial, String... added) {
-        return new ArrayList<>() {{
-            addAll(Arrays.asList(initial.split("; +")));
-            addAll(Arrays.asList(added));
-        }};
+        final List<String> result = new ArrayList<>(Arrays.asList(initial.split("; +")));
+        result.addAll(Arrays.asList(added));
+        return result;
     }
 
     private static final String DUMMY_REQ_FILENAME = ".requirements.smv";
@@ -216,11 +215,10 @@ public class ComprehensiveVerifier {
             System.out.println("Failing divisions in the order of unit groups: " + failingDivisions);
 
             // 2. find configurations to be model-checked
-            final List<VerificationConfiguration> essentialConfigurations = new ArrayList<>() {{
-                // fault-free configuration
-                add(new VerificationConfiguration(viewpointUnit, 1,
-                        Collections.nCopies(unitGroups.size(), Command.NA_INDEX)));
-            }};
+            final List<VerificationConfiguration> essentialConfigurations = new ArrayList<>();
+            // fault-free configuration
+            essentialConfigurations.add(new VerificationConfiguration(viewpointUnit, 1,
+                    Collections.nCopies(unitGroups.size(), Command.NA_INDEX)));
             if (pattern.equals("isolated")) {
                 // for isolated verification, assume all possible failures and division 1
                 // TODO exclude all other system parts
@@ -278,14 +276,17 @@ public class ComprehensiveVerifier {
                 // redirect output and error to log file
                 final Process p = new ProcessBuilder().inheritIO().redirectErrorStream(true)
                         .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile)).command(args).start();
-                try {
-                    p.waitFor();
-                } catch (InterruptedException ignored) {
+                final int exitCode = Processes.waitFor(p);
+                if (exitCode != 0) {
+                    final String message = "-- NuSMV command exited with non-zero status " + exitCode;
+                    System.out.println(message);
+                    try (PrintWriter pw = new PrintWriter(new FileOutputStream(logFile, true))) {
+                        pw.println(message);
+                    }
                 }
 
                 faultFree = false;
             }
-            //new BufferedReader(new InputStreamReader(System.in)).readLine();
         }
 
         @Override

@@ -33,10 +33,6 @@ class UnitCommand extends Command {
             outputsWithTypes.put(tokens[0], tokens[1]);
         }
         final int divisionToRetain = getIntArgOrNA("single_division_to_retain", 1, parent.divisions);
-        if (divisionToRetain > parent.divisions) {
-            throw new RuntimeException(String.format("Division index must not exceed %d for unit group %s",
-                    parent.divisions, parent.toNuSMV()));
-        }
         workspace.units.put(Pair.of(parent, name), new Unit(name, parent,
                 getArg("nusmv_module_name"), getArg("filename"),
                 divisionToRetain, getIntArg("max_delay", 0, Integer.MAX_VALUE), outputsWithTypes,

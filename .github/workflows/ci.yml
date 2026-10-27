@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests (Java ${{ matrix.java }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Install Ant and SWI-Prolog
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends swi-prolog-nox
+          command -v ant || sudo apt-get install -y --no-install-recommends ant
+
+      - name: Run tests against the sources
+        run: ant test
+
+      - name: Run tests against the pre-built JARs
+        run: ant test-jars
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-java-${{ matrix.java }}
+          path: build/test-reports

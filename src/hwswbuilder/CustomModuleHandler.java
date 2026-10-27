@@ -49,9 +49,8 @@ public class CustomModuleHandler {
     ));
 
     public String nuSMVDeclaration() {
-        final List<String> parts = new ArrayList<>() {{
-            add(FAILURE_MODULE + SEP + SEP + VANISHING_FAILURE_MODULE + SEP);
-        }};
+        final List<String> parts = new ArrayList<>();
+        parts.add(FAILURE_MODULE + SEP + SEP + VANISHING_FAILURE_MODULE + SEP);
         if (!customDelayModules.isEmpty()) {
             parts.add(customDelayModules.values().stream().map(Pair::getRight)
                     .collect(Collectors.joining(SEP)));

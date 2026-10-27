@@ -4,7 +4,7 @@ import hwswbuilder.structures.*;
 
 import java.util.Map;
 
-class AllToAllConnectionCommand extends ConnectionCommand {
+class AllToAllConnectionCommand extends Command {
     AllToAllConnectionCommand(Map<String, String> arguments, Workspace workspace) {
         super(arguments, workspace);
     }

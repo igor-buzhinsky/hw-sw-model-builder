@@ -5,15 +5,30 @@
 
     <property name="args4j.path" value="lib/args4j-2.0.21.jar"/>
     <property name="commons.lang3.path" value="lib/commons-lang3-3.1.jar"/>
-    
+
     <property name="main.main" value="hwswbuilder/Main"/>
     <property name="main.jar" value="hw_sw_builder.jar"/>
-    
+
     <property name="comprehensive-verifier.main" value="hwswbuilder/ComprehensiveVerifier"/>
     <property name="comprehensive-verifier.jar" value="comprehensive_verifier.jar"/>
-    
+
     <property name="debug" value="true"/>
-    
+
+    <!-- the produced JARs must run on Java 11+ regardless of the JDK used to build them -->
+    <property name="java.release" value="11"/>
+
+    <!-- testing -->
+    <property name="test.src.dir" value="test/src"/>
+    <property name="build.dir" value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="test.classes.dir" value="${build.dir}/test-classes"/>
+    <property name="test.reports.dir" value="${build.dir}/test-reports"/>
+    <property name="junit.version" value="1.11.4"/>
+    <property name="junit.jar" value="${build.dir}/lib/junit-platform-console-standalone-${junit.version}.jar"/>
+    <property name="junit.url"
+              value="https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit.version}/junit-platform-console-standalone-${junit.version}.jar"/>
+    <property name="junit.sha256" value="b016ef6b1c3454d6d7c2c88ce081dabf289699686af6622d6e4e2e1b54b4a2fc"/>
+
     <target name="all"
             depends="main-jar, comprehensive-verifier-jar">
     </target>
@@ -24,6 +39,7 @@
                destdir="${bin.dir}"
                classpath="${args4j.path}:${commons.lang3.path}"
                includeantruntime="false"
+               release="${java.release}"
                debug="${debug}">
             <include name="${main.main}.java"/>
         </javac>
@@ -38,13 +54,14 @@
         </jar>
         <delete dir="${bin.dir}"/>
     </target>
-    
+
     <target name="comprehensive-verifier-jar">
         <mkdir dir="${bin.dir}"/>
         <javac srcdir="${src.dir}"
                destdir="${bin.dir}"
                classpath="${args4j.path}:${commons.lang3.path}"
                includeantruntime="false"
+               release="${java.release}"
                debug="${debug}">
             <include name="${comprehensive-verifier.main}.java"/>
         </javac>
@@ -57,6 +74,84 @@
             <zipfileset src="${commons.lang3.path}" excludes="meta-inf/*.sf"/>
             <fileset file="reasoning.pl" />
         </jar>
+        <delete dir="${bin.dir}"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="${src.dir}"
+               destdir="${classes.dir}"
+               classpath="${args4j.path}:${commons.lang3.path}"
+               includeantruntime="false"
+               release="${java.release}"
+               debug="true"/>
+        <copy file="reasoning.pl" todir="${classes.dir}"/>
+    </target>
+
+    <target name="check-junit">
+        <available file="${junit.jar}" property="junit.present"/>
+    </target>
+
+    <target name="download-junit" depends="check-junit" unless="junit.present">
+        <mkdir dir="${build.dir}/lib"/>
+        <get src="${junit.url}" dest="${junit.jar}"/>
+        <checksum file="${junit.jar}" algorithm="SHA-256" property="${junit.sha256}" verifyproperty="junit.ok"/>
+        <fail message="Checksum mismatch for ${junit.jar}">
+            <condition>
+                <isfalse value="${junit.ok}"/>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="compile-tests" depends="compile, download-junit">
+        <mkdir dir="${test.classes.dir}"/>
+        <javac srcdir="${test.src.dir}"
+               destdir="${test.classes.dir}"
+               classpath="${classes.dir}:${args4j.path}:${commons.lang3.path}:${junit.jar}"
+               includeantruntime="false"
+               release="${java.release}"
+               debug="true"/>
+    </target>
+
+    <macrodef name="run-tests">
+        <attribute name="classpath"/>
+        <attribute name="reports"/>
+        <sequential>
+            <!-- some features write temporary files into the working directory -->
+            <mkdir dir="${build.dir}/test-work"/>
+            <java jar="${junit.jar}" fork="true" failonerror="true" dir="${build.dir}/test-work">
+                <jvmarg value="-ea"/>
+                <sysproperty key="hwswbuilder.repoRoot" value="${basedir}"/>
+                <syspropertyset>
+                    <propertyref prefix="hwswbuilder."/>
+                </syspropertyset>
+                <arg value="execute"/>
+                <arg value="--class-path"/>
+                <arg path="${test.classes.dir}:@{classpath}"/>
+                <arg value="--scan-class-path"/>
+                <arg file="${test.classes.dir}"/>
+                <arg value="--reports-dir"/>
+                <arg file="@{reports}"/>
+                <arg value="--disable-banner"/>
+                <arg value="--details=tree"/>
+            </java>
+        </sequential>
+    </macrodef>
+
+    <!-- run the test suite against classes compiled from the sources -->
+    <target name="test" depends="compile-tests">
+        <run-tests classpath="${classes.dir}:${args4j.path}:${commons.lang3.path}"
+                   reports="${test.reports.dir}/sources"/>
+    </target>
+
+    <!-- run the same test suite against the pre-built JARs in jars/ to check that they match the sources -->
+    <target name="test-jars" depends="compile-tests">
+        <run-tests classpath="${jars.dir}/${main.jar}:${jars.dir}/${comprehensive-verifier.jar}"
+                   reports="${test.reports.dir}/jars"/>
+    </target>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
         <delete dir="${bin.dir}"/>
     </target>
 </project>
