@@ -25,14 +25,14 @@ time_list() {
 
 truth_list() {
     #echo $name
-    if [[ "$name" == ltl_* || "$name" == ctl_* || "$name" == css_falsification_* ]]; then
+    if [[ "$name" == ltl_* || "$name" == ctl_* ]]; then
         special_cmd="s/F?/F/g; "
     else
         special_cmd=""
     fi
     special_cmd="s/F!/!/g; $special_cmd"
     #echo -n $(cat "$1" | grep -P "^--( specification .* is (true|false)| TIMEOUT .*s| no counterexample found with bound $bmc_length|$)" | sed 's/^-- no counterexample found with bound '$bmc_length'$/T/g; s/^-- specification .* is true$/T/g; s/^-- specification .* is false$/F/g; s/^-- TIMEOUT .*s/?/g; s/^--$/|/g') | sed 's/ //g; s/F?/F/g; s/|//g'
-    echo -n $(cat "$1" | grep -P "^(--( ((LTL )?specification|invariant|Property) .* is (true|false)| TIMEOUT .*s| no counterexample found with bound $bmc_length| SKIP$|$)|Command exited with non-zero status)" | sed 's/^-- no counterexample found with bound '$bmc_length'$/T/g; s/^-- \(\(LTL \)\?specification\|invariant\|Property\) .* is true.*$/T/g; s/^-- \(\(LTL \)\?specification\|invariant\|Property\) .* is false.*$/F/g; s/^-- TIMEOUT .*s/?/g; s/^Command exited with non-zero status .*$/!/g; s/^-- SKIP$/./g; s/^--$/|/g') | sed 's/ //g; '"$special_cmd"' s/|//g'
+    echo -n $(cat "$1" | grep -P "^(--( ((LTL )?specification|invariant|Property) .* is (true|false)| TIMEOUT .*s| no counterexample found with bound $bmc_length|$)|Command exited with non-zero status)" | sed 's/^-- no counterexample found with bound '$bmc_length'$/T/g; s/^-- \(\(LTL \)\?specification\|invariant\|Property\) .* is true.*$/T/g; s/^-- \(\(LTL \)\?specification\|invariant\|Property\) .* is false.*$/F/g; s/^-- TIMEOUT .*s/?/g; s/^Command exited with non-zero status .*$/!/g; s/^--$/|/g') | sed 's/ //g; '"$special_cmd"' s/|//g'
 }
 
 aggregated_time_list() {

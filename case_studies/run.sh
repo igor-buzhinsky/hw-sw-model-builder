@@ -18,10 +18,8 @@ elif [[ "$mode" == bmc ]]; then
     pattern="(LTL|PSL)SPEC "
 elif [[ "$mode" == timed ]]; then
     pattern="LTLSPEC "
-elif [[ "$mode" == css_een_sorensson || "$mode" == css_dual || "$mode" == css_zigzag || "$mode" == css_interp_seq || "$mode" == css_interpolants || "$mode" == css_ic3 || "$mode" == css_coi_bdd || "$mode" == css_coi_sat || "$mode" == css_coi_smt ]]; then
-    pattern="--@(SAFETYSPEC@ |SAFETYSPEC_NONSAFETY@|SAFETYSPEC_TOO_DIFFICULT_TO_REWRITE@)"
 else
-    echo "Argument $argnum (mode) must be one of: ctl, ltl, bmc, timed, css_een_sorensson, css_dual, css_zigzag, css_interp_seq, css_ic3, css_interpolants, css_coi_bdd, css_coi_sat, css_coi_smt"; exit
+    echo "Argument $argnum (mode) must be one of: ctl, ltl, bmc, timed"; exit
 fi
 shift; (( argnum++ ))
 
@@ -145,43 +143,6 @@ while read p; do
             # print results immediately
             #grep -Pv '^\*\*\*' < "$nusmvres" | grep -Pv "^$"
             #echo
-        elif [[ "$mode" == css_* ]]; then
-            if [[ "$p" == "--@SAFETYSPEC_NONSAFETY@" || "$p" == "--@SAFETYSPEC_TOO_DIFFICULT_TO_REWRITE@" ]]; then
-                # skip this property
-                /usr/bin/time -f "$format" echo "-- SKIP" > "$nusmvres" 2>&1
-                exitcode=$?
-            else
-                invar_k=1000
-                propname=checksafetyspec_invar
-                case "$mode" in
-                css_een_sorensson)
-                    command="set cone_of_influence 1; go_bmc; check_invar_bmc -a een-sorensson -k $invar_k -P $propname" ;;
-                css_dual)
-                    command="set cone_of_influence 1; go_msat; msat_check_invar_bmc -a dual -k $invar_k -P $propname" ;;
-                css_zigzag)
-                    command="set cone_of_influence 1; go_msat; msat_check_invar_bmc -a zigzag -k $invar_k -P $propname" ;;
-                # it seems that this one only finds couneterexamples:
-                #css_falsification)
-                #    command="set cone_of_influence 1; go_msat; msat_check_invar_bmc -a falsification -k $invar_k -P $propname" ;;
-                css_interp_seq)
-                    command="set cone_of_influence 1; go_msat; msat_check_invar_bmc -a interp_seq -k $invar_k -P $propname" ;;
-                css_interpolants)
-                    command="set cone_of_influence 1; go_msat; msat_check_invar_bmc -a interpolants -k $invar_k -P $propname" ;;
-                css_ic3)
-                    command="go; build_boolean_model; check_invar_ic3 -k $invar_k -P $propname" ;;
-                css_coi_bdd)
-                    command="set cone_of_influence 1; go; check_invar_inc_coi_bdd" ;;
-                css_coi_sat)
-                    command="set cone_of_influence 1; go_bmc; build_flat_model; check_invar_inc_coi_bmc -k $invar_k -P $propname" ;;
-                css_coi_smt)
-                    command="set cone_of_influence 1; go_msat; msat_check_invar_inc_coi -k $invar_k -P $propname" ;;
-                esac
-                timeout "$timeout" /usr/bin/time -f "$format" ./checksafetyspec.sh nuXmv mon_learn_sym "$nusmvfile" "-dynamic -df" "$command" true > "$nusmvres" 2>&1
-                exitcode=$?
-                # print results immediately
-                grep -Pv '^\*\*\*' < "$nusmvres" | grep -Pv "^$"
-                echo
-            fi
         else
             timeout "$timeout" /usr/bin/time -f "$format" NuSMV $options "$nusmvfile" > "$nusmvres" 2>&1
             exitcode=$?
