@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "HW-SW-builder"
+abstract: >-
+  A tool that builds NuSMV/nuXmv models of redundant, fault-tolerant safety systems
+  and checks them for single-fault tolerance.
+type: software
+authors:
+  - family-names: Buzhinsky
+    given-names: Igor
+  - family-names: Pakonen
+    given-names: Antti
+repository-code: "https://github.com/igor-buzhinsky/hw-sw-model-builder"
+license: MIT
+version: 1.0.0
+date-released: 2026-11-19
+keywords:
+  - formal verification
+  - model checking
+  - NuSMV
+  - fault tolerance
+  - nuclear instrumentation and control
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Buzhinsky
+      given-names: Igor
+    - family-names: Pakonen
+      given-names: Antti
+  title: "Model-checking detailed fault-tolerant nuclear power plant safety functions"
+  journal: "IEEE Access"
+  volume: 7
+  start: 162139
+  end: 162156
+  year: 2019
+  doi: "10.1109/ACCESS.2019.2951938"

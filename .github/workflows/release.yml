@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish the JARs
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Install Ant and SWI-Prolog
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends swi-prolog-nox
+          command -v ant || sudo apt-get install -y --no-install-recommends ant
+
+      - name: Run tests against the sources
+        run: ant test
+
+      - name: Rebuild the JARs from the tagged sources
+        run: ant all
+
+      - name: Run tests against the rebuilt JARs
+        run: ant test-jars
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            jars/hw_sw_builder.jar jars/comprehensive_verifier.jar \
+            --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
