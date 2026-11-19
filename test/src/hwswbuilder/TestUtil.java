@@ -85,6 +85,14 @@ public final class TestUtil {
         return buffer.toString(StandardCharsets.UTF_8);
     }
 
+    /**
+     * Runs hw_sw_builder in-process and checks that it succeeds. Unlike Main.main, this never calls System.exit,
+     * which would kill the test JVM.
+     */
+    public static void runMainExpectingSuccess(String... args) {
+        assertEquals(0, new Main().run(args), "Non-zero exit code of Main");
+    }
+
     @FunctionalInterface
     public interface ThrowingRunnable {
         void run() throws Exception;

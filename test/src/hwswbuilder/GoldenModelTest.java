@@ -47,7 +47,7 @@ class GoldenModelTest {
         final String[] args = new String[extraArgs.length + 1];
         args[0] = dir.resolve(conf).toString();
         System.arraycopy(extraArgs, 0, args, 1, extraArgs.length);
-        final String stdout = captureStdout(() -> Main.main(args));
+        final String stdout = captureStdout(() -> runMainExpectingSuccess(args));
         assertTrue(stdout.startsWith("Processing "), stdout);
         return read(dir.resolve("out.smv"));
     }

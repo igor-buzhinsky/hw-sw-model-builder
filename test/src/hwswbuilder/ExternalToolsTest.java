@@ -34,11 +34,11 @@ class ExternalToolsTest {
     private String checkSymmetry(boolean fakeOutcome, Path record) throws Exception {
         final Path dir = copyCaseStudy("cat_sitting", tmp);
         final Path fake = fakeNuSMV(tmp, record, fakeOutcome);
-        return captureStdout(() -> Main.main(new String[] {
+        return captureStdout(() -> runMainExpectingSuccess(
                 dir.resolve("cat_sitting.conf").toString(),
                 "--nusmvCommand", fake.toString(),
                 "--configSubstitutions", "DELAY_APU=0; DELAY_ALU=0",
-                "--checkSymmetry"}));
+                "--checkSymmetry"));
     }
 
     /**
@@ -123,7 +123,7 @@ class ExternalToolsTest {
         // four Prolog analyses: two for SAS_ALU (the first one is reused once), PACS2, PAS;
         // none for the isolated pattern
         assertEquals(4, out.split("Running prolog interpreter", -1).length - 1, out);
-        // the tool treats Prolog errors as negative answers, so make sure that Prolog actually works
+        // make sure that Prolog actually works and confirms at least one domination
         assertTrue(out.matches("(?s).*Reply: true\\R.*"), "Prolog never confirmed a domination: " + out);
         assertMatchesGolden("comprehensive_log_0f.txt", read(log0));
         assertMatchesGolden("comprehensive_log_1f.txt", read(log1));

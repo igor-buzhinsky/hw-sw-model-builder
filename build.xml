@@ -94,13 +94,15 @@
 
     <target name="download-junit" depends="check-junit" unless="junit.present">
         <mkdir dir="${build.dir}/lib"/>
-        <get src="${junit.url}" dest="${junit.jar}"/>
-        <checksum file="${junit.jar}" algorithm="SHA-256" property="${junit.sha256}" verifyproperty="junit.ok"/>
-        <fail message="Checksum mismatch for ${junit.jar}">
+        <!-- download to a temporary file so that a corrupt download is never picked up by check-junit -->
+        <get src="${junit.url}" dest="${junit.jar}.part"/>
+        <checksum file="${junit.jar}.part" algorithm="SHA-256" property="${junit.sha256}" verifyproperty="junit.ok"/>
+        <fail message="Checksum mismatch for ${junit.jar}.part">
             <condition>
                 <isfalse value="${junit.ok}"/>
             </condition>
         </fail>
+        <move file="${junit.jar}.part" tofile="${junit.jar}"/>
     </target>
 
     <target name="compile-tests" depends="compile, download-junit">
@@ -144,10 +146,13 @@
                    reports="${test.reports.dir}/sources"/>
     </target>
 
-    <!-- run the same test suite against the pre-built JARs in jars/ to check that they match the sources -->
+    <!-- run the same test suite against the pre-built JARs in jars/ to check that they match the sources;
+         both JARs bundle the shared classes, so the suite runs twice, each time with a different JAR first -->
     <target name="test-jars" depends="compile-tests">
         <run-tests classpath="${jars.dir}/${main.jar}:${jars.dir}/${comprehensive-verifier.jar}"
-                   reports="${test.reports.dir}/jars"/>
+                   reports="${test.reports.dir}/jars-main"/>
+        <run-tests classpath="${jars.dir}/${comprehensive-verifier.jar}:${jars.dir}/${main.jar}"
+                   reports="${test.reports.dir}/jars-verifier"/>
     </target>
 
     <target name="clean">

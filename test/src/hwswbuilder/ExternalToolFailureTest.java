@@ -55,9 +55,9 @@ class ExternalToolFailureTest {
     @Test
     void symmetryCheckReportsNuSMVFailure() throws Exception {
         final Path fake = fakeNuSMV(tmp, tmp.resolve("models.txt"), true, 2);
-        final String out = captureStdout(() -> Main.main(new String[] {
+        final String out = captureStdout(() -> runMainExpectingSuccess(
                 catSitting().toString(), "--nusmvCommand", fake.toString(),
-                "-s", "DELAY_APU=0; DELAY_ALU=0", "--checkSymmetry"}));
+                "-s", "DELAY_APU=0; DELAY_ALU=0", "--checkSymmetry"));
         assertTrue(out.contains("*** NuSMV failed to perform a symmetry check (exit status 2)."), out);
         assertFalse(out.contains("Symmetry check has passed"), out);
     }
@@ -91,11 +91,11 @@ class ExternalToolFailureTest {
 
     private RuntimeException dominationGraphError(Path prolog) throws Exception {
         final Path conf = catSitting();
-        return assertThrows(RuntimeException.class, () -> captureStdout(() -> Main.main(new String[] {
+        return assertThrows(RuntimeException.class, () -> captureStdout(() -> runMainExpectingSuccess(
                 conf.toString(), "-s", "DELAY_APU=0; DELAY_ALU=0",
                 "--prologFilename", tmp.resolve("cat.pl").toString(),
                 "--prologExecutable", prolog.toString(),
-                "--generateDominationGraph", "SITTING_ALU"})));
+                "--generateDominationGraph", "SITTING_ALU")));
     }
 
     @Test
